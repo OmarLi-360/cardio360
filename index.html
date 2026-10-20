@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cardio360 · Predicción de riesgo cardiovascular</title>
+<meta name="description" content="Proyecto final de Visualización de Datos (FUSM): análisis exploratorio, tres modelos de aprendizaje automático, curvas de aprendizaje y validación, reducción de dimensionalidad y un tablero interactivo sobre 68.512 exámenes médicos.">
+<meta name="author" content="Omar Libardo Acelas Angulo">
+<meta name="theme-color" content="#b0283f">
+<link rel="canonical" href="https://omarli-360.github.io/cardio360/">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_CO">
+<meta property="og:site_name" content="Cardio360">
+<meta property="og:title" content="Cardio360 · Predicción de riesgo cardiovascular">
+<meta property="og:description" content="68.512 exámenes médicos, tres modelos y una pregunta: ¿a quién se le escapa al modelo? Tablero interactivo, cuadernos en Colab y datos abiertos.">
+<meta property="og:url" content="https://omarli-360.github.io/cardio360/">
+<meta property="og:image" content="https://omarli-360.github.io/cardio360/assets/og-cardio360.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Cardio360: la proporción con ECV sube de 22 % a 84 % según la presión arterial">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Portada: banda de papel de ECG con el titular; debajo, capítulos del proyecto en tarjetas y una columna de lectura. */
+:root{
+  --paper:#faf8f7; --surface:#ffffff; --ink:#1c1a1a; --ink-2:#55504f; --muted:#857e7c; --line:#e9e3e0;
+  --ecg:#f2d7d7; --ecg-strong:#e9bcbc; --accent:#b0283f; --accent-ink:#ffffff; --accent-soft:#f7e6e9;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#131111; --surface:#1c1919; --ink:#f2edeb; --ink-2:#c7bfbc; --muted:#948b88; --line:#302a29;
+  --ecg:#2e1d1f; --ecg-strong:#45282c; --accent:#e5627a; --accent-ink:#1c1010; --accent-soft:#3a1c22; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#131111; --surface:#1c1919; --ink:#f2edeb; --ink-2:#c7bfbc; --muted:#948b88; --line:#302a29;
+  --ecg:#2e1d1f; --ecg-strong:#45282c; --accent:#e5627a; --accent-ink:#1c1010; --accent-soft:#3a1c22; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.6 var(--f-body)}
+.gutter{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1120px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;color:var(--ink)}
+h1{font-size:clamp(3rem,9vw,5.6rem);font-weight:800;font-stretch:76%;letter-spacing:-.02em;line-height:.95}
+h2{font-size:clamp(1.5rem,3.2vw,2rem);font-weight:750;font-stretch:84%;line-height:1.15}
+h3{font-size:1.12rem;font-weight:700;font-stretch:90%}
+p{margin:0}
+a{color:var(--accent)}
+.eyebrow{font:600 .74rem var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:clamp(1.12rem,2.2vw,1.32rem);color:var(--ink-2);max-width:40ch;line-height:1.45}
+.muted{color:var(--ink-2)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+header{background-color:var(--surface);
+  background-image:linear-gradient(var(--ecg-strong) 1px,transparent 1px),linear-gradient(90deg,var(--ecg-strong) 1px,transparent 1px),
+  linear-gradient(var(--ecg) 1px,transparent 1px),linear-gradient(90deg,var(--ecg) 1px,transparent 1px);
+  background-size:40px 40px,40px 40px,8px 8px,8px 8px;border-bottom:1px solid var(--line)}
+.hero{padding-block:56px 20px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:40px;align-items:end}
+.hero-text{display:grid;gap:18px}
+.credits{font-size:.95rem;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:4px 16px}
+.credits b{color:var(--ink);font-weight:600}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.btn{display:inline-flex;align-items:center;gap:8px;font:650 1rem var(--f-body);text-decoration:none;border-radius:10px;padding:11px 18px;border:1.5px solid var(--accent);transition:transform .15s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--accent)}
+.btn:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.trace{display:block;width:100%;height:54px;margin-top:26px}
+.trace path{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+
+.figure{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 18px 12px}
+.figure figcaption{font-size:.84rem;color:var(--muted);margin-top:6px}
+.figure svg{display:block;width:100%;height:auto}
+
+main{padding-block:44px 72px;display:grid;gap:64px}
+section{display:grid;gap:20px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:2px;align-content:start}
+.kpi b{font:800 2.3rem/1.05 var(--f-display);font-stretch:78%}
+.kpi span{font-size:.92rem;color:var(--ink-2)}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;gap:10px;align-content:start}
+.card .n{font:600 .74rem var(--f-mono);letter-spacing:.1em;color:var(--accent);text-transform:uppercase}
+.card ul{margin:0;padding-left:1.1em;color:var(--ink-2);font-size:.95rem;display:grid;gap:2px}
+.card .links{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;font:600 .88rem var(--f-body);text-decoration:none;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:var(--surface)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.colab{background:var(--accent-soft);border-color:transparent}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:start}
+ol.findings{margin:0;padding:0;list-style:none;display:grid;gap:14px}
+ol.findings li{display:grid;grid-template-columns:16px 1fr;gap:12px}
+ol.findings li::before{content:"";width:16px;height:3px;border-radius:2px;background:var(--accent);margin-top:.8em}
+.downloads{display:grid;gap:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.dl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink)}
+.dl:last-child{border-bottom:0}
+.dl:hover{background:var(--accent-soft)}
+.dl b{font-weight:650}
+.dl small{grid-column:1;color:var(--ink-2);font-size:.88rem}
+.dl .fmt{grid-row:1 / span 2;grid-column:2;font:600 .74rem var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:2px 7px}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.step{border-top:3px solid var(--accent);padding-top:12px;display:grid;gap:6px}
+.step p{color:var(--ink-2);font-size:.95rem}
+code{font-family:var(--f-mono);font-size:.84em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+summary{cursor:pointer;font:700 1.05rem var(--f-display);font-stretch:90%}
+ol.refs{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:8px;font-size:.9rem;color:var(--ink-2)}
+ol.refs li{padding-left:2em;text-indent:-2em}
+ol.refs a{word-break:break-all}
+.note{border-left:3px solid var(--accent);padding:4px 0 4px 14px;color:var(--ink-2);max-width:72ch}
+footer{border-top:1px solid var(--line);padding-block:24px 36px;color:var(--muted);font-size:.9rem}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between}
+@media (max-width:900px){.hero,.two{grid-template-columns:1fr}.cards,.steps{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap gutter hero">
+    <div class="hero-text">
+      <span class="eyebrow">Visualización de Datos · Proyecto final · FUSM</span>
+      <h1>Cardio360</h1>
+      <p class="lead">68.512 exámenes médicos, tres modelos de aprendizaje automático y una pregunta: ¿a quién se le escapa al modelo la enfermedad cardiovascular?</p>
+      <div class="credits"><span><b>Autor:</b> Omar Libardo Acelas Angulo</span><span><b>Tutor:</b> Sergio Lara</span><span>Fundación Universitaria San Mateo · Bogotá · Octubre de 2026</span></div>
+      <div class="actions">
+        <a class="btn primary" href="tablero/">Explorar el tablero interactivo →</a>
+        <a class="btn ghost" href="#cuadernos">Abrir los cuadernos en Colab</a>
+        <a class="btn ghost" href="#descargas">Descargas</a>
+      </div>
+    </div>
+    <figure class="figure" style="margin:0">
+      <svg viewBox="0 0 420 260" role="img" aria-label="La proporción con ECV sube de 22 % a 84 % según la presión arterial">
+        <text x="0" y="16" font-family="Archivo, Arial Narrow, sans-serif" font-weight="700" font-size="16" style="fill:var(--ink)">La ECV sube de 22 % a 84 % con la presión</text>
+        <g id="miniBars"></g>
+        <line x1="0" x2="420" y1="222" y2="222" stroke="var(--line)" stroke-width="1.5"></line>
+      </svg>
+      <figcaption>% de pacientes con ECV por categoría de presión arterial (ACC/AHA 2017). Cuaderno 01.</figcaption>
+    </figure>
+  </div>
+  <div class="wrap gutter"><svg class="trace" viewBox="0 0 1200 54" preserveAspectRatio="none" aria-hidden="true"><path id="ecg"></path></svg></div>
+</header>
+
+<main class="wrap gutter">
+
+  <section aria-labelledby="t-res">
+    <span class="eyebrow">Resultados</span>
+    <h2 id="t-res">Lo que encontró el proyecto</h2>
+    <div class="kpis">
+      <div class="kpi"><b>68.512</b><span>pacientes analizados tras retirar 1.488 registros imposibles</span></div>
+      <div class="kpi"><b>0,803</b><span>AUC-ROC de XGBoost en 13.703 pacientes de prueba</span></div>
+      <div class="kpi"><b>−53 %</b><span>enfermos no detectados al bajar el umbral de 0,50 a 0,33</span></div>
+      <div class="kpi"><b>2,9×</b><span>peso de la presión sistólica frente a la edad (SHAP)</span></div>
+    </div>
+    <div class="two">
+      <ol class="findings">
+        <li><div><b>El techo es la información, no el algoritmo.</b> Los tres modelos rinden casi igual. Las curvas de aprendizaje se aplanan hacia los 15.000 pacientes: más registros no ayudarían, mejores variables sí.</div></li>
+        <li><div><b>El modelo redescubrió la guía clínica.</b> El aporte de la sistólica cambia de signo cerca de 130 mmHg, el umbral de hipertensión estadio 1 de la ACC/AHA.</div></li>
+        <li><div><b>El umbral es una decisión clínica.</b> Para tamizaje se usa 0,33: detecta 85 de cada 100 enfermos, a cambio de más falsas alarmas.</div></li>
+      </ol>
+      <ol class="findings">
+        <li><div><b>Un buen AUC global esconde desigualdad.</b> Hay paridad entre sexos, pero con un umbral único el modelo alerta al 92 % de las personas de 55 a 65 años y pierde al 37 % de los enfermos de 30 a 44.</div></li>
+        <li><div><b>Las islas de t-SNE y UMAP no son tipos de paciente.</b> Las forman el sexo, el colesterol y la glucosa. Dentro de cada isla, enfermos y sanos se mezclan, igual que en las 14 dimensiones originales.</div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="cuadernos" aria-labelledby="t-cua">
+    <span class="eyebrow">Método · Google Colab</span>
+    <h2 id="t-cua">Tres cuadernos que se ejecutan de punta a punta</h2>
+    <p class="muted" style="max-width:70ch">Cada cuaderno se abre en Google Colab con un clic, lee los datos de este repositorio y produce los resultados que alimentan el tablero. En Colab, elija <b>Entorno de ejecución → Ejecutar todas</b>.</p>
+    <div class="cards">
+      <article class="card">
+        <span class="n">Cuaderno 01 · menos de 1 min</span>
+        <h3>Análisis exploratorio y limpieza</h3>
+        <ul><li>Siete reglas de limpieza clínica, con antes y después</li><li>Preferencia de dígito en la presión</li><li>Prevalencias, distribuciones y correlaciones</li><li>Exporta el CSV depurado</li></ul>
+        <div class="links"><a class="chip colab" href="https://colab.research.google.com/github/OmarLi-360/cardio360/blob/main/cuadernos/01_EDA_y_Limpieza.ipynb" target="_blank" rel="noopener">Abrir en Colab</a><a class="chip" href="https://github.com/OmarLi-360/cardio360/blob/main/cuadernos/01_EDA_y_Limpieza.ipynb" target="_blank" rel="noopener">Ver en GitHub</a></div>
+      </article>
+      <article class="card">
+        <span class="n">Cuaderno 02 · unos 4 min</span>
+        <h3>Modelado, evaluación y explicabilidad</h3>
+        <ul><li>Regresión logística, Random Forest y XGBoost</li><li>Curvas de validación y de aprendizaje</li><li>ROC, calibración y umbral clínico</li><li>SHAP, equidad y ficha del modelo</li></ul>
+        <div class="links"><a class="chip colab" href="https://colab.research.google.com/github/OmarLi-360/cardio360/blob/main/cuadernos/02_Modelado_y_Evaluacion.ipynb" target="_blank" rel="noopener">Abrir en Colab</a><a class="chip" href="https://github.com/OmarLi-360/cardio360/blob/main/cuadernos/02_Modelado_y_Evaluacion.ipynb" target="_blank" rel="noopener">Ver en GitHub</a></div>
+      </article>
+      <article class="card">
+        <span class="n">Cuaderno 03 · unos 5 min</span>
+        <h3>Reducción de dimensionalidad</h3>
+        <ul><li>PCA, t-SNE y UMAP</li><li>Sensibilidad a los hiperparámetros</li><li>Confiabilidad y AUC de k-NN en 2D</li><li>Explicación SHAP por paciente</li></ul>
+        <div class="links"><a class="chip colab" href="https://colab.research.google.com/github/OmarLi-360/cardio360/blob/main/cuadernos/03_Reduccion_Dimensionalidad.ipynb" target="_blank" rel="noopener">Abrir en Colab</a><a class="chip" href="https://github.com/OmarLi-360/cardio360/blob/main/cuadernos/03_Reduccion_Dimensionalidad.ipynb" target="_blank" rel="noopener">Ver en GitHub</a></div>
+      </article>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-rep">
+    <span class="eyebrow">Reproducibilidad</span>
+    <h2 id="t-rep">Repetirlo en el computador</h2>
+    <div class="steps">
+      <div class="step"><h3>1 · Descargar</h3><p>Descargue el repositorio en ZIP, descomprímalo y renombre la carpeta <code>cardio360-main</code> a <code>C:\Cardio360</code>.</p></div>
+      <div class="step"><h3>2 · Instalar</h3><p>Con Python 3.10 a 3.12, ejecute en la carpeta: <code>py -3.12 -m venv .venv</code>, <code>.venv\Scripts\activate</code> y <code>pip install -r requirements.txt</code>.</p></div>
+      <div class="step"><h3>3 · Ejecutar</h3><p>Abra <code>jupyter lab</code>, ejecute los cuadernos 01, 02 y 03 en orden y regenere el tablero con <code>py construir_tablero.py</code>.</p></div>
+    </div>
+    <p class="note">La guía de uso trae cada paso, los valores esperados para comprobar que el resultado se repitió y las soluciones a problemas frecuentes. Una sola semilla (42) hace que los resultados sean reproducibles.</p>
+  </section>
+
+  <section id="descargas" aria-labelledby="t-des">
+    <span class="eyebrow">Descargas</span>
+    <h2 id="t-des">Datos, informe y guía</h2>
+    <div class="downloads">
+      <a class="dl" href="datos/cardio_depurado.csv" download><b>Conjunto depurado</b><small>68.512 pacientes, 16 columnas con variables derivadas. Separador ; y decimales con coma (Excel en español).</small><span class="fmt">CSV · 4,6 MB</span></a>
+      <a class="dl" href="informe/Informe_ejecutivo_Cardio360.pdf"><b>Informe ejecutivo</b><small>Problema, datos, modelos, umbral, equidad, limitaciones y recomendaciones.</small><span class="fmt">PDF</span></a>
+      <a class="dl" href="informe/Informe_ejecutivo_Cardio360.docx" download><b>Informe ejecutivo, editable</b><small>La misma versión en formato Word.</small><span class="fmt">DOCX</span></a>
+      <a class="dl" href="GUIA_Cardio360.pdf"><b>Guía de uso</b><small>Ver, repetir en Colab o en el computador, y reconstruir el tablero.</small><span class="fmt">PDF</span></a>
+      <a class="dl" href="tablero/tablero_riesgo_cardiovascular.html" download><b>Tablero para usar sin internet</b><small>Un solo archivo con la librería de gráficos incluida. Se abre con doble clic.</small><span class="fmt">HTML · 5,6 MB</span></a>
+      <a class="dl" href="https://github.com/OmarLi-360/cardio360/archive/refs/heads/main.zip"><b>Proyecto completo</b><small>Cuadernos, datos originales y depurados, resultados, script del tablero e informe.</small><span class="fmt">ZIP</span></a>
+      <a class="dl" href="https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset" target="_blank" rel="noopener"><b>Fuente original de los datos</b><small>Cardiovascular Disease dataset, S. Ulianova, Kaggle. 70.000 registros.</small><span class="fmt">KAGGLE</span></a>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-uso">
+    <span class="eyebrow">Uso responsable</span>
+    <h2 id="t-uso">Alcance, límites y referencias</h2>
+    <p class="note">Herramienta educativa. El modelo sirve, como máximo, para priorizar a quién hacer un tamizaje más completo; no diagnostica ni reemplaza el criterio de un profesional de la salud. Los hábitos son autorreportados, la presión se registró redondeada y las asociaciones aprendidas no son causales.</p>
+    <details>
+      <summary>Cibergrafía (APA 7.ª ed., enlaces comprobados el 19 de octubre de 2026)</summary>
+      <ol class="refs"><li>Anthropic. (2026). <i>Claude</i> (claude-opus-5-5) [Modelo de lenguaje grande]. <a href="https://claude.ai" target="_blank" rel="noopener">https://claude.ai</a></li><li>caravanuden. (s. f.). <i>cardio</i> [Repositorio de GitHub; copia de cardio_train.csv]. <a href="https://github.com/caravanuden/cardio" target="_blank" rel="noopener">https://github.com/caravanuden/cardio</a></li><li>Chen, T., & Guestrin, C. (2016). XGBoost: A scalable tree boosting system. En <i>Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining</i> (pp. 785–794). ACM. <a href="https://doi.org/10.1145/2939672.2939785" target="_blank" rel="noopener">https://doi.org/10.1145/2939672.2939785</a></li><li>Google. (s. f.). <i>Google Colab</i> [Entorno de cuadernos en la nube]. <a href="https://colab.research.google.com/" target="_blank" rel="noopener">https://colab.research.google.com/</a></li><li>Lundberg, S. M., Erion, G., Chen, H., y otros. (2020). From local explanations to global understanding with explainable AI for trees. <i>Nature Machine Intelligence, 2</i>(1), 56–67. <a href="https://doi.org/10.1038/s42256-019-0138-9" target="_blank" rel="noopener">https://doi.org/10.1038/s42256-019-0138-9</a></li><li>Lundberg, S. M., & Lee, S.-I. (2017). A unified approach to interpreting model predictions. <i>Advances in Neural Information Processing Systems, 30</i>. <a href="https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html" target="_blank" rel="noopener">https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html</a></li><li>McAdoo, T., Denneny, S., & Lee, C. (2025, 9 de septiembre). Citing generative AI in APA Style: Part 1—Reference formats. <i>APA Style Blog</i>. <a href="https://apastyle.apa.org/blog/cite-generative-ai-references" target="_blank" rel="noopener">https://apastyle.apa.org/blog/cite-generative-ai-references</a></li><li>McInnes, L., Healy, J., & Melville, J. (2018). <i>UMAP: Uniform manifold approximation and projection for dimension reduction</i> [Preimpresión]. arXiv. <a href="https://arxiv.org/abs/1802.03426" target="_blank" rel="noopener">https://arxiv.org/abs/1802.03426</a></li><li>Mitchell, M., Wu, S., Zaldivar, A., Barnes, P., Vasserman, L., Hutchinson, B., Spitzer, E., Raji, I. D., & Gebru, T. (2019). Model cards for model reporting. En <i>Proceedings of the Conference on Fairness, Accountability, and Transparency</i> (pp. 220–229). ACM. <a href="https://doi.org/10.1145/3287560.3287596" target="_blank" rel="noopener">https://doi.org/10.1145/3287560.3287596</a></li><li>pandas development team. (2026). <i>pandas documentation</i> (versión 3.0.6). <a href="https://pandas.pydata.org/docs/" target="_blank" rel="noopener">https://pandas.pydata.org/docs/</a></li><li>Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., Prettenhofer, P., Weiss, R., Dubourg, V., Vanderplas, J., Passos, A., Cournapeau, D., Brucher, M., Perrot, M., & Duchesnay, É. (2011). Scikit-learn: Machine learning in Python. <i>Journal of Machine Learning Research, 12</i>, 2825–2830. <a href="https://jmlr.org/papers/v12/pedregosa11a.html" target="_blank" rel="noopener">https://jmlr.org/papers/v12/pedregosa11a.html</a></li><li>Plotly. (s. f.). <i>Plotly JavaScript open source graphing library</i>. <a href="https://plotly.com/javascript/" target="_blank" rel="noopener">https://plotly.com/javascript/</a></li><li>scikit-learn developers. (s. f.-a). <i>Probability calibration</i> (versión 1.9.1). <a href="https://scikit-learn.org/stable/modules/calibration.html" target="_blank" rel="noopener">https://scikit-learn.org/stable/modules/calibration.html</a></li><li>scikit-learn developers. (s. f.-b). <i>Validation curves: Plotting scores to evaluate models</i> (versión 1.9.1). <a href="https://scikit-learn.org/stable/modules/learning_curve.html" target="_blank" rel="noopener">https://scikit-learn.org/stable/modules/learning_curve.html</a></li><li>SHAP developers. (s. f.). <i>Welcome to the SHAP documentation</i>. <a href="https://shap.readthedocs.io/en/latest/" target="_blank" rel="noopener">https://shap.readthedocs.io/en/latest/</a></li><li>Ulianova, S. (s. f.). <i>Cardiovascular Disease dataset</i> [Conjunto de datos]. Kaggle. <a href="https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset" target="_blank" rel="noopener">https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset</a></li><li>UMAP developers. (s. f.). <i>UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction</i> [Documentación]. <a href="https://umap-learn.readthedocs.io/en/latest/" target="_blank" rel="noopener">https://umap-learn.readthedocs.io/en/latest/</a></li><li>van der Maaten, L., & Hinton, G. (2008). Visualizing data using t-SNE. <i>Journal of Machine Learning Research, 9</i>, 2579–2605. <a href="https://www.jmlr.org/papers/v9/vandermaaten08a.html" target="_blank" rel="noopener">https://www.jmlr.org/papers/v9/vandermaaten08a.html</a></li><li>Wattenberg, M., Viégas, F., & Johnson, I. (2016). How to use t-SNE effectively. <i>Distill, 1</i>(10). <a href="https://doi.org/10.23915/distill.00002" target="_blank" rel="noopener">https://doi.org/10.23915/distill.00002</a></li><li>Whelton, P. K., Carey, R. M., Aronow, W. S., y otros. (2017). 2017 ACC/AHA/AAPA/ABC/ACPM/AGS/APhA/ASH/ASPC/NMA/PCNA guideline for the prevention, detection, evaluation, and management of high blood pressure in adults. <i>Hypertension</i>. <a href="https://doi.org/10.1161/HYP.0000000000000065" target="_blank" rel="noopener">https://doi.org/10.1161/HYP.0000000000000065</a></li><li>XGBoost developers. (2026). <i>XGBoost documentation</i> (versión 3.4.2). <a href="https://xgboost.readthedocs.io/en/stable/" target="_blank" rel="noopener">https://xgboost.readthedocs.io/en/stable/</a></li><li>Youden, W. J. (1950). Index for rating diagnostic tests. <i>Cancer, 3</i>, 32–35. <a href="https://pubmed.ncbi.nlm.nih.gov/15405679/" target="_blank" rel="noopener">https://pubmed.ncbi.nlm.nih.gov/15405679/</a></li></ol>
+    </details>
+    <details>
+      <summary>Declaración de uso de inteligencia artificial</summary>
+      <p class="muted" style="margin-top:10px">El proyecto se desarrolló con apoyo de Claude (Anthropic, 2026), un modelo de lenguaje grande. Claude ayudó a localizar y verificar los datos, a escribir el código de los cuadernos y del tablero, a redactar el informe y a comprobar la cibergrafía. El autor definió el alcance y validó las decisiones del análisis, y es responsable del contenido entregado.</p>
+    </details>
+  </section>
+</main>
+
+<footer class="gutter"><div class="wrap"><span>Cardio360 · Proyecto final de Visualización de Datos · Fundación Universitaria San Mateo</span><span>Omar Libardo Acelas Angulo · Tutor: Sergio Lara · 2026 · <a href="https://github.com/OmarLi-360/cardio360">Repositorio en GitHub</a></span></div></footer>
+
+<script>
+(function(){
+  var R=[["Normal",.2215],["Elevada",.3234],["HTA 1",.3846],["HTA 2",.7793],["Crisis",.843]], g=document.getElementById("miniBars"), html="";
+  var x0=6, bw=64, gap=19, base=222, h=170;
+  R.forEach(function(r,i){var x=x0+i*(bw+gap), y=base-r[1]*h;
+    html+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+(base-y)+'" rx="4" fill="var(--accent)" fill-opacity="'+(0.32+i*0.17)+'"><title>'+r[0]+': '+Math.round(r[1]*100)+' % con ECV</title></rect>';
+    html+='<text x="'+(x+bw/2)+'" y="'+(y-8)+'" text-anchor="middle" font-family="Archivo, Arial Narrow, sans-serif" font-weight="700" font-size="16" style="fill:var(--ink)">'+Math.round(r[1]*100)+' %</text>';
+    html+='<text x="'+(x+bw/2)+'" y="'+(base+20)+'" text-anchor="middle" font-size="13" style="fill:var(--ink-2)">'+r[0]+'</text>';});
+  g.innerHTML=html;
+  var d="M0 34",x=0; while(x<1200){d+=" L"+(x+40)+" 34 L"+(x+47)+" 29 L"+(x+54)+" 34 L"+(x+64)+" 34 L"+(x+68)+" 40 L"+(x+73)+" 4 L"+(x+78)+" 48 L"+(x+82)+" 34 L"+(x+98)+" 34 L"+(x+110)+" 25 L"+(x+122)+" 34 L"+(x+200)+" 34"; x+=200;}
+  document.getElementById("ecg").setAttribute("d",d);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,729 @@
+<title>Tablero de Riesgo Cardiovascular</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: banda de encabezado con papel milimetrado de electrocardiograma + navegación por pestañas fija;
+   cada pestaña es un capítulo del análisis, con controles arriba y gráficos debajo. */
+:root{
+  --paper:#faf8f7; --surface:#ffffff; --ink:#1c1a1a; --ink-2:#55504f; --muted:#857e7c; --line:#e9e3e0;
+  --ecg:#f2d7d7; --ecg-strong:#e9bcbc; --accent:#b0283f; --accent-soft:#f7e6e9;
+  --c0:#2a78d6; --c1:#eb6834; --c2:#1baf7a; --c3:#6250d6; --n1:#c3c2b7; --n2:#e4e2dc;
+  --good:#0f7d0f; --crit:#c93636;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#131111; --surface:#1c1919; --ink:#f2edeb; --ink-2:#c7bfbc; --muted:#948b88; --line:#302a29;
+  --ecg:#2e1d1f; --ecg-strong:#45282c; --accent:#e5627a; --accent-soft:#3a1c22;
+  --c0:#3987e5; --c1:#d95926; --c2:#199e70; --c3:#9085e9; --n1:#5d5a55; --n2:#393835;
+  --good:#3fbf3f; --crit:#ec6b6b; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --paper:#131111; --surface:#1c1919; --ink:#f2edeb; --ink-2:#c7bfbc; --muted:#948b88; --line:#302a29;
+  --ecg:#2e1d1f; --ecg-strong:#45282c; --accent:#e5627a; --accent-soft:#3a1c22;
+  --c0:#3987e5; --c1:#d95926; --c2:#199e70; --c3:#9085e9; --n1:#5d5a55; --n2:#393835;
+  --good:#3fbf3f; --crit:#ec6b6b; color-scheme:dark;}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+.gutter{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;color:var(--ink)}
+h1{font-size:clamp(1.7rem,4.2vw,2.6rem);font-weight:750;font-stretch:80%;letter-spacing:-.01em;line-height:1.08}
+h2{font-size:1.45rem;font-weight:700;font-stretch:85%;line-height:1.2}
+h3{font-size:1.05rem;font-weight:650;font-stretch:90%}
+p{margin:0}
+.lead{color:var(--ink-2);max-width:68ch}
+.eyebrow{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* Encabezado: papel de ECG (cuadrícula de 1 mm y 5 mm) */
+header.hero{background-color:var(--surface);
+  background-image:linear-gradient(var(--ecg-strong) 1px,transparent 1px),linear-gradient(90deg,var(--ecg-strong) 1px,transparent 1px),
+  linear-gradient(var(--ecg) 1px,transparent 1px),linear-gradient(90deg,var(--ecg) 1px,transparent 1px);
+  background-size:40px 40px,40px 40px,8px 8px,8px 8px;border-bottom:1px solid var(--line)}
+.hero-in{padding-block:28px 18px;display:grid;gap:10px}
+.trace{display:block;width:100%;height:46px;margin-top:4px}
+.trace path{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.byline{font-size:.9rem;color:var(--ink-2)}
+.home{justify-self:start;font:600 .82rem var(--f-body);color:var(--ink-2);text-decoration:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px}
+.home:hover{color:var(--accent);border-color:var(--accent)}
+
+/* Navegación */
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.tabs-in{display:flex;gap:2px;overflow-x:auto;scrollbar-width:thin}
+.tab{appearance:none;border:0;background:none;color:var(--ink-2);font:600 .93rem var(--f-body);padding:13px 12px 11px;white-space:nowrap;cursor:pointer;border-bottom:3px solid transparent}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+main{padding-block:28px 64px}
+section.panel{display:grid;gap:28px}
+.block{display:grid;gap:12px;min-width:0;align-content:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:860px){.grid2,.grid3{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:2px;align-content:start}
+.kpi .v{font-family:var(--f-display);font-weight:750;font-stretch:80%;font-size:2.1rem;line-height:1.05}
+.kpi .l{font-size:.86rem;color:var(--ink-2)}
+.kpi .s{font-size:.78rem;color:var(--muted)}
+
+.chart{width:100%;height:360px;min-width:0}
+.chart.tall{height:440px}.chart.short{height:280px}
+.note{align-self:start;font-size:.92rem;color:var(--ink-2);border-left:3px solid var(--accent);padding:2px 0 2px 12px;max-width:80ch}
+.note b{color:var(--ink)}
+
+/* Controles */
+.controls{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:end}
+.ctl{display:grid;gap:4px;font-size:.8rem;color:var(--ink-2)}
+.ctl>span{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase}
+select,input[type=number]{font:inherit;font-size:.92rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 9px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{appearance:none;border:0;background:none;color:var(--ink-2);font:600 .86rem var(--f-body);padding:7px 12px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink)}
+.slider{display:flex;align-items:center;gap:10px;min-width:min(100%,320px)}
+input[type=range]{accent-color:var(--accent);width:100%}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 .84rem var(--f-body);border-radius:7px;padding:6px 10px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+
+/* Tablas */
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--f-mono);font-weight:600;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+td.num,th.num{text-align:right}
+tr.best td{background:var(--accent-soft)}
+
+/* Matriz de confusión */
+.cm{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;font-size:.84rem}
+.cm .h{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);align-self:center;text-align:center}
+.cm .cell{border-radius:8px;padding:12px;display:grid;gap:2px;border:1px solid var(--line)}
+.cm .cell b{font-family:var(--f-display);font-size:1.6rem;font-stretch:80%;line-height:1}
+.cm .ok{background:var(--surface)}
+.cm .fn{background:color-mix(in srgb,var(--c1) 16%,var(--surface));border-color:var(--c1)}
+.cm .fp{background:color-mix(in srgb,var(--c0) 14%,var(--surface));border-color:var(--c0)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;align-items:center}
+.chip{display:inline-flex;gap:6px;align-items:baseline;border:1px solid var(--line);border-radius:999px;padding:4px 11px;font-size:.84rem;background:var(--surface)}
+.chip b{font-family:var(--f-mono);font-weight:600}
+
+/* Paciente (espacio latente) */
+.patient{display:grid;gap:10px}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 14px;font-size:.88rem}
+.facts div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding-block:3px}
+.facts span{color:var(--ink-2)}
+.tag{display:inline-block;font-family:var(--f-mono);font-size:.72rem;font-weight:600;letter-spacing:.04em;padding:3px 8px;border-radius:5px;border:1px solid currentColor}
+.tag.fn{color:var(--c1)}.tag.fp{color:var(--c0)}.tag.ok{color:var(--ink-2)}
+.latent-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px}
+@media (max-width:860px){.latent-grid{grid-template-columns:1fr}}
+
+/* Simulador */
+.sim{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px}
+@media (max-width:860px){.sim{grid-template-columns:1fr}}
+.form{display:grid;gap:12px;align-content:start}
+.form .seg{justify-self:start}
+.field{display:grid;grid-template-columns:110px minmax(0,1fr) 88px;gap:10px;align-items:center;font-size:.9rem}
+.field output{font-family:var(--f-mono);text-align:right}
+.checks{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.9rem}
+.risk{display:grid;gap:6px;align-content:start}
+.risk .pct{font-family:var(--f-display);font-size:clamp(3rem,9vw,4.6rem);font-weight:780;font-stretch:75%;line-height:.95}
+.meter{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--c0),var(--n1) 50%,var(--c1));position:relative}
+.meter i{position:absolute;top:-5px;width:3px;height:22px;background:var(--ink);border-radius:2px;transform:translateX(-1px)}
+.meter u{position:absolute;top:-3px;height:18px;border-left:2px dashed var(--ink-2)}
+.status{display:inline-flex;gap:8px;align-items:center;font-weight:600}
+.status .dot{width:10px;height:10px;border-radius:50%}
+
+ol.findings{margin:0;padding:0;list-style:none;display:grid;gap:14px}
+ol.findings li{display:grid;grid-template-columns:14px 1fr;gap:10px;align-items:start}
+ol.findings li::before{content:"";width:14px;height:3px;background:var(--accent);margin-top:.75em;border-radius:2px}
+.flow{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch}
+.flow .step{flex:1 1 170px;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface);display:grid;gap:4px;align-content:start}
+.flow .step .mono{font-size:.75rem;color:var(--accent)}
+.refs{margin:0;padding-left:0;list-style:none;display:grid;gap:8px;font-size:.88rem;color:var(--ink-2)}
+.refs li{padding-left:2em;text-indent:-2em}
+.refs a{color:var(--accent);word-break:break-all}
+footer{border-top:1px solid var(--line);padding-block:20px 32px;color:var(--muted);font-size:.84rem}
+.loading{color:var(--muted);font-size:.9rem;padding:20px 0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="hero">
+  <div class="wrap gutter hero-in">
+    <!--INICIO-->
+    <span class="eyebrow">Visualización de Datos · Proyecto final · FUSM</span>
+    <h1>Tablero de Riesgo Cardiovascular</h1>
+    <p class="lead">68.512 exámenes médicos, tres modelos de aprendizaje automático y una pregunta: ¿qué tan bien se puede anticipar la enfermedad cardiovascular, y a quién se le escapa al modelo?</p>
+    <p class="byline">Omar Libardo Acelas Angulo · Tutor: Sergio Lara · Octubre de 2026 · Datos: <i>Cardiovascular Disease dataset</i> (S. Ulianova, Kaggle)</p>
+    <svg class="trace" viewBox="0 0 1200 46" preserveAspectRatio="none" aria-hidden="true"><path id="ecgPath"></path></svg>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Secciones del tablero">
+  <div class="wrap gutter tabs-in" role="tablist" id="tablist">
+    <button class="tab" role="tab" data-tab="resumen">Resumen</button>
+    <button class="tab" role="tab" data-tab="datos">Datos</button>
+    <button class="tab" role="tab" data-tab="modelos">Modelos</button>
+    <button class="tab" role="tab" data-tab="umbral">Umbral y calibración</button>
+    <button class="tab" role="tab" data-tab="latente">Espacio latente</button>
+    <button class="tab" role="tab" data-tab="explica">Explicabilidad</button>
+    <button class="tab" role="tab" data-tab="equidad">Equidad</button>
+    <button class="tab" role="tab" data-tab="simulador">Simulador</button>
+    <button class="tab" role="tab" data-tab="ficha">Ficha del modelo</button>
+  </div>
+</nav>
+
+<main class="wrap gutter">
+
+<!-- ============ RESUMEN ============ -->
+<section class="panel" id="p-resumen" role="tabpanel">
+  <div class="kpis" id="kpis"></div>
+  <div class="grid2">
+    <div class="block">
+      <h2>Lo que encontramos</h2>
+      <ol class="findings">
+        <li><div><b>El techo es la información, no el algoritmo.</b> Los tres modelos rinden casi igual (AUC entre 0,794 y 0,803). Las curvas de aprendizaje se aplanan hacia los 15.000 pacientes: más registros no ayudarían, mejores variables sí.</div></li>
+        <li><div><b>La presión sistólica manda.</b> Su impacto promedio triplica el de la edad. El modelo "redescubrió" el umbral de hipertensión de 130 mmHg de la guía ACC/AHA sin que nadie se lo indicara.</div></li>
+        <li><div><b>El umbral es una decisión clínica.</b> Bajarlo de 0,50 a 0,33 reduce a la mitad los enfermos no detectados, a cambio de duplicar las falsas alarmas.</div></li>
+        <li><div><b>Un buen AUC global esconde desigualdad.</b> Hay paridad entre sexos, pero con un umbral único el modelo alerta al 92 % de las personas de 55 a 65 años y pierde al 37 % de los enfermos de 30 a 44.</div></li>
+        <li><div><b>Las islas de t-SNE y UMAP no son tipos de paciente.</b> Las forman combinaciones de sexo, colesterol y glucosa. Dentro de cada isla, enfermos y sanos se mezclan.</div></li>
+      </ol>
+    </div>
+    <div class="block">
+      <h2>Cómo se construyó</h2>
+      <div class="flow">
+        <div class="step"><span class="mono">Cuaderno 01</span><b>EDA y limpieza</b><span class="byline">7 reglas clínicas, variables derivadas, prevalencias.</span></div>
+        <div class="step"><span class="mono">Cuaderno 02</span><b>Modelado</b><span class="byline">3 modelos, curvas de validación y aprendizaje, calibración, SHAP, equidad.</span></div>
+        <div class="step"><span class="mono">Cuaderno 03</span><b>Dimensionalidad</b><span class="byline">PCA, t-SNE y UMAP, con métricas de confiabilidad.</span></div>
+      </div>
+      <p class="note">Los cuadernos de Google Colab <b>calculan</b> y exportan sus resultados en JSON; este tablero los <b>observa</b>. Nada se reentrena en el navegador, salvo el simulador, que usa la fórmula de la regresión logística.</p>
+      <div class="card"><h3>Cómo leer los colores</h3>
+        <div class="chips" style="margin-top:8px" id="legendChips"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DATOS ============ -->
+<section class="panel" id="p-datos" role="tabpanel" hidden>
+  <div class="block">
+    <span class="eyebrow">Calidad de los datos</span>
+    <h2>Cero nulos no significa datos limpios</h2>
+    <p class="lead">El conjunto no tenía valores faltantes, pero sí presiones negativas y de hasta 16.020 mmHg. Se eliminó lo fisiológicamente imposible, no lo raro: un hipertenso con 190 mmHg es justo el paciente que interesa.</p>
+  </div>
+  <div class="grid2">
+    <div class="card block"><h3>Embudo de limpieza</h3><div id="chFunnel" class="chart short"></div></div>
+    <div class="card block"><h3>Presión arterial cruda (escala logarítmica)</h3><div id="chRaw" class="chart short"></div></div>
+  </div>
+
+  <div class="block">
+    <span class="eyebrow">Explorador</span>
+    <h2>¿Qué separa a quienes tienen ECV?</h2>
+    <div class="controls">
+      <label class="ctl"><span>Variable</span><select id="dVar">
+        <option value="sistolica">Presión sistólica (mmHg)</option><option value="diastolica">Presión diastólica (mmHg)</option>
+        <option value="edad">Edad (años)</option><option value="imc">IMC (kg/m²)</option>
+        <option value="peso">Peso (kg)</option><option value="altura">Altura (cm)</option></select></label>
+      <label class="ctl"><span>Sexo</span><select id="dSexo"><option value="">Todos</option><option>Mujer</option><option>Hombre</option></select></label>
+      <label class="ctl"><span>Edad desde</span><select id="dEdadMin"></select></label>
+      <label class="ctl"><span>hasta</span><select id="dEdadMax"></select></label>
+      <label class="ctl"><span>Colesterol</span><select id="dCol"><option value="">Todos</option><option value="1">Normal</option><option value="2">Alto</option><option value="3">Muy alto</option></select></label>
+    </div>
+    <div class="card"><p class="byline" id="dStats"></p><div id="chDist" class="chart"></div></div>
+    <p class="note">Muestra estratificada de 5.000 pacientes limpios. Las barras muestran el % de cada grupo, para comparar formas aunque los grupos tengan tamaños distintos. Los picos en 120, 130 y 140 de la sistólica son la <b>preferencia de dígito</b>: el 97 % de las mediciones se registró redondeado a la decena.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card block">
+      <div class="controls"><h3 style="flex:1 1 auto">Proporción con ECV</h3>
+        <label class="ctl"><span>Por</span><select id="pDim">
+          <option value="categoria_pa">Categoría de presión (ACC/AHA)</option><option value="grupo_edad">Grupo de edad</option>
+          <option value="colesterol">Colesterol</option><option value="glucosa">Glucosa</option><option value="sexo">Sexo</option>
+          <option value="fuma">Fuma</option><option value="alcohol">Alcohol</option><option value="activo">Actividad física</option></select></label></div>
+      <div id="chPrev" class="chart"></div>
+    </div>
+    <div class="card block"><h3>Correlaciones (todas las filas limpias)</h3><div id="chCorr" class="chart"></div></div>
+  </div>
+</section>
+
+<!-- ============ MODELOS ============ -->
+<section class="panel" id="p-modelos" role="tabpanel" hidden>
+  <div class="block">
+    <span class="eyebrow">Evaluación en el conjunto de prueba · 13.703 pacientes nunca vistos</span>
+    <h2>Tres filosofías, casi el mismo resultado</h2>
+    <div class="card tablewrap"><table id="tMetrics"></table></div>
+    <p class="note">La sensibilidad y la especificidad de esta tabla usan el umbral por defecto de 0,50. En la pestaña <b>Umbral y calibración</b> se puede ver qué pasa al moverlo.</p>
+  </div>
+  <div class="grid2">
+    <div class="card block"><h3>Estabilidad: AUC en los 5 pliegues de validación cruzada</h3><div id="chCV" class="chart short"></div></div>
+    <div class="card block"><h3>Curva ROC</h3><div id="chROC" class="chart short"></div></div>
+  </div>
+  <div class="block">
+    <span class="eyebrow">Diagnóstico de ajuste</span>
+    <h2>Curvas de validación y de aprendizaje</h2>
+    <div class="controls"><div class="seg" id="segCurve" role="group" aria-label="Modelo"></div></div>
+    <div class="grid2">
+      <div class="card block"><h3>Curva de validación</h3><div id="chVal" class="chart"></div><p class="byline" id="txtVal"></p></div>
+      <div class="card block"><h3>Curva de aprendizaje</h3><div id="chLearn" class="chart"></div><p class="byline" id="txtLearn"></p></div>
+    </div>
+  </div>
+  <div class="card block"><h3>Curva precisión–sensibilidad</h3><div id="chPR" class="chart short"></div></div>
+</section>
+
+<!-- ============ UMBRAL ============ -->
+<section class="panel" id="p-umbral" role="tabpanel" hidden>
+  <div class="block">
+    <span class="eyebrow">Decisión clínica</span>
+    <h2>Mueva el umbral y vea a quién se gana y a quién se pierde</h2>
+    <div class="controls">
+      <div class="ctl"><span>Modelo</span><div class="seg" id="segUModel" role="group" aria-label="Modelo"></div></div>
+      <label class="ctl" style="flex:1 1 280px"><span>Umbral de decisión</span>
+        <div class="slider"><input type="range" id="uSlider" min="0.01" max="0.99" step="0.01" value="0.33"><b class="mono" id="uVal">0,33</b></div></label>
+      <div class="ctl"><span>Criterios</span><div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn" data-u="0.5">Por defecto · 0,50</button><button class="btn" id="bYouden"></button><button class="btn" id="bTamiz"></button></div></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card block">
+      <h3>Matriz de confusión <span class="byline" id="cmModel"></span></h3>
+      <div class="cm" id="cm"></div>
+      <div class="chips" id="uChips"></div>
+    </div>
+    <div class="card block"><h3>Sensibilidad, especificidad y precisión según el umbral</h3><div id="chThr" class="chart"></div></div>
+  </div>
+  <div class="grid2">
+    <div class="card block"><h3>Calibración: ¿el 70 % significa 70 %?</h3><div id="chCal" class="chart"></div></div>
+    <div class="block" style="align-content:start">
+      <p class="note"><b>Tamizaje (0,33):</b> sensibilidad del 85 %. Los enfermos no detectados bajan de 2.122 a 999, a costa de que las falsas alarmas suban de 1.500 a 3.161. Para detección temprana, un examen adicional cuesta menos que un caso perdido.</p>
+      <p class="note"><b>Calibración:</b> los tres modelos siguen la diagonal (Brier ≈ 0,18). Sus probabilidades se pueden leer como riesgos, lo que da sentido al porcentaje del simulador.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ESPACIO LATENTE ============ -->
+<section class="panel" id="p-latente" role="tabpanel" hidden>
+  <div class="block">
+    <span class="eyebrow">Reducción de dimensionalidad · 3.000 pacientes de prueba</span>
+    <h2>14 variables comprimidas en un plano. Haga clic en un punto para ver por qué el modelo decidió.</h2>
+    <div class="controls">
+      <div class="ctl"><span>Técnica</span><div class="seg" id="segMethod" role="group" aria-label="Técnica"></div></div>
+      <label class="ctl"><span>Colorear por</span><select id="lColor">
+        <option value="resultado">Resultado del modelo</option><option value="real">Clase real</option><option value="prob">Probabilidad predicha</option>
+        <option value="sistolica">Presión sistólica</option><option value="edad">Edad</option><option value="colesterol">Colesterol</option><option value="sexo">Sexo</option></select></label>
+      <label class="ctl" style="flex:1 1 240px"><span>Umbral (compartido)</span>
+        <div class="slider"><input type="range" id="lSlider" min="0.01" max="0.99" step="0.01" value="0.33"><b class="mono" id="lVal">0,33</b></div></label>
+    </div>
+  </div>
+  <div class="latent-grid">
+    <div class="card"><div id="chLatent" class="chart" style="height:540px"></div></div>
+    <div class="card patient" id="patient"></div>
+  </div>
+  <div class="grid2">
+    <div class="card block"><h3>¿Cuánta información se pierde al comprimir?</h3><div class="tablewrap"><table id="tQual"></table></div>
+      <p class="byline">La confiabilidad mide si los vecinos en 2D también lo eran en 14D. El AUC de k-NN mide cuánta información predictiva sobrevive.</p></div>
+    <div class="block" style="align-content:start">
+      <p class="note"><b>La mezcla es real, no un artefacto.</b> Un clasificador k-NN logra un AUC de 0,779 en las 14 dimensiones originales y entre 0,751 y 0,760 en 2D. Las clases ya se superponen en el espacio original, y eso explica el techo de ≈ 0,80.</p>
+      <p class="note"><b>Pruebe colorear por colesterol o por sexo:</b> las islas de t-SNE y UMAP siguen esas variables, no la enfermedad. La presión y la probabilidad varían <i>dentro</i> de cada isla.</p>
+      <p class="note"><b>PCA</b> conserva la varianza global: sus dos ejes explican solo el 32 %. El primer eje agrupa peso, IMC y presión; el segundo, sexo, altura, tabaco y alcohol.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EXPLICABILIDAD ============ -->
+<section class="panel" id="p-explica" role="tabpanel" hidden>
+  <div class="block">
+    <span class="eyebrow">¿Por qué decide así?</span>
+    <h2>Dos modelos, dos explicaciones, la misma historia</h2>
+  </div>
+  <div class="grid2">
+    <div class="card block"><h3>XGBoost · importancia SHAP media</h3><div id="chShap" class="chart tall"></div></div>
+    <div class="card block"><h3>Regresión logística · coeficientes estandarizados</h3><div id="chCoef" class="chart tall"></div></div>
+  </div>
+  <div class="grid3">
+    <p class="note"><b>Coinciden en lo esencial:</b> la sistólica, la edad y el colesterol muy alto dominan en ambos modelos, tal como anticipaba el análisis exploratorio.</p>
+    <p class="note"><b>Señales contraintuitivas:</b> la glucosa muy alta, fumar y el alcohol <i>bajan</i> levemente el riesgo. No es causal: puede deberse al subreporte, a pacientes ya en tratamiento o al colesterol, que "se lleva" el efecto.</p>
+    <p class="note"><b>Colinealidad:</b> el peso y el IMC correlacionan 0,87, así que la logística reparte su efecto entre ambos con signos opuestos. Esos coeficientes no se leen por separado.</p>
+  </div>
+</section>
+
+<!-- ============ EQUIDAD ============ -->
+<section class="panel" id="p-equidad" role="tabpanel" hidden>
+  <div class="block">
+    <span class="eyebrow">XGBoost · conjunto de prueba</span>
+    <h2>¿El modelo funciona igual para todos?</h2>
+    <div class="controls"><label class="ctl" style="flex:1 1 280px"><span>Umbral (compartido)</span>
+      <div class="slider"><input type="range" id="eSlider" min="0.01" max="0.99" step="0.01" value="0.33"><b class="mono" id="eVal">0,33</b></div></label></div>
+  </div>
+  <div class="card"><div id="chEq" class="chart"></div></div>
+  <div class="card tablewrap"><table id="tEq"></table></div>
+  <div class="grid2">
+    <p class="note"><b>Por sexo hay paridad</b> en todos los umbrales: AUC de 0,80 en hombres y 0,81 en mujeres.</p>
+    <p class="note"><b>Por edad, un umbral único no sirve igual para todos.</b> El modelo se apoya en la edad: un joven enfermo "no parece" enfermo y un mayor sano "parece" enfermo. Mueva el umbral y observe que ningún valor equilibra a la vez a los tres grupos. La mitigación sería usar umbrales por grupo o recalibrar por subgrupo.</p>
+  </div>
+</section>
+
+<!-- ============ SIMULADOR ============ -->
+<section class="panel" id="p-simulador" role="tabpanel" hidden>
+  <div class="block">
+    <span class="eyebrow">Herramienta educativa · no es un instrumento diagnóstico</span>
+    <h2>Simulador "¿qué pasaría si…?"</h2>
+    <p class="lead">Ajuste el perfil y observe cómo cambia el riesgo que estima la regresión logística del proyecto. Se usa este modelo porque es transparente y rinde solo 0,9 puntos de AUC menos que XGBoost.</p>
+  </div>
+  <div class="sim">
+    <div class="card form" id="simForm">
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" data-preset="a">Ejemplo: 42 años, presión normal</button><button class="btn" data-preset="b">Ejemplo: 58 años, hipertensión</button></div>
+    </div>
+    <div class="card risk">
+      <span class="eyebrow">Riesgo estimado de ECV</span>
+      <div class="pct" id="sPct">–</div>
+      <div class="meter" aria-hidden="true"><u id="sThr"></u><i id="sNeedle"></i></div>
+      <div class="byline mono" style="display:flex;justify-content:space-between"><span>0 %</span><span>umbral de tamizaje 33 %</span><span>100 %</span></div>
+      <div class="status" id="sStatus"></div>
+      <div class="chips" id="sChips"></div>
+      <h3 style="margin-top:8px">Qué empuja este resultado <span class="byline">(frente al paciente promedio)</span></h3>
+      <div id="chSim" class="chart"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FICHA ============ -->
+<section class="panel" id="p-ficha" role="tabpanel" hidden>
+  <div class="block"><span class="eyebrow">Model Card</span><h2>Ficha del modelo</h2></div>
+  <div class="card tablewrap"><table>
+    <tr><th>Modelo</th><td>XGBoost: 300 árboles de profundidad 3, tasa de aprendizaje 0,05, elegidos con curvas de validación (validación cruzada de 5 pliegues). El simulador usa la regresión logística (C ≈ 0,018).</td></tr>
+    <tr><th>Datos</th><td>70.000 exámenes de adultos de 30 a 65 años (Kaggle, S. Ulianova); 68.512 tras 7 reglas de limpieza clínica. Origen geográfico y periodo de recolección no documentados. Partición estratificada 80/20 con semilla fija (42).</td></tr>
+    <tr><th>Rendimiento</th><td>Prueba (n = 13.703): AUC-ROC 0,803 · AUC-PR 0,787 · exactitud 0,736 · Brier 0,180.</td></tr>
+    <tr><th>Umbral recomendado</th><td>0,33 para tamizaje: sensibilidad 0,85 y especificidad 0,54.</td></tr>
+    <tr><th>Uso previsto</th><td>Fines educativos y exploración de factores de riesgo. Como máximo, apoyo para priorizar a quién hacer un tamizaje más completo.</td></tr>
+    <tr><th>No usar para</th><td>Diagnosticar, decidir tratamientos o aplicar a poblaciones fuera de 30–65 años o distintas a la de los datos sin revalidar.</td></tr>
+    <tr><th>Limitaciones</th><td>Presión registrada con redondeo (97 % termina en cero). Hábitos autorreportados. Sin antecedentes familiares ni tratamientos. Las asociaciones aprendidas no son causales.</td></tr>
+    <tr><th>Equidad</th><td>Paridad por sexo. Disparidad marcada por edad con un umbral único: sobrealerta de 55 a 65 años y subdetección de 30 a 44.</td></tr>
+    <tr><th>Ética</th><td>Un falso negativo puede retrasar la atención; un falso positivo genera ansiedad y costos. Toda decisión clínica corresponde a un profesional de la salud.</td></tr>
+  </table></div>
+  <div class="grid3">
+    <div class="card block"><h3>Reproducibilidad</h3><p class="byline">Tres cuadernos que se ejecutan de punta a punta en Google Colab o en el computador. Leen los datos de la carpeta datos o, si no los encuentran, de GitHub. Una sola semilla (42) para todo el proyecto.</p></div>
+    <div class="card block"><h3>Herramientas</h3><p class="byline">Python · pandas · scikit-learn · XGBoost · SHAP · UMAP · matplotlib/seaborn (cuadernos) · Plotly.js (tablero).</p></div>
+    <div class="card block"><h3>Fuente de los datos</h3><p class="byline">Ulianova, S. <i>Cardiovascular Disease dataset</i>. Kaggle. Copias verificadas en GitHub con el mismo MD5.</p></div>
+  </div>
+  <div class="card block"><h3>Cibergrafía</h3><p class="byline">APA 7.ª ed. Enlaces comprobados el 19 de octubre de 2026. El uso de IA se cita según APA Style (septiembre de 2025).</p><ol class="refs"><li>Anthropic. (2026). <i>Claude</i> (claude-opus-5-5) [Modelo de lenguaje grande]. <a href="https://claude.ai" target="_blank" rel="noopener">https://claude.ai</a></li><li>caravanuden. (s. f.). <i>cardio</i> [Repositorio de GitHub; copia de cardio_train.csv]. <a href="https://github.com/caravanuden/cardio" target="_blank" rel="noopener">https://github.com/caravanuden/cardio</a></li><li>Chen, T., & Guestrin, C. (2016). XGBoost: A scalable tree boosting system. En <i>Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining</i> (pp. 785–794). ACM. <a href="https://doi.org/10.1145/2939672.2939785" target="_blank" rel="noopener">https://doi.org/10.1145/2939672.2939785</a></li><li>Google. (s. f.). <i>Google Colab</i> [Entorno de cuadernos en la nube]. <a href="https://colab.research.google.com/" target="_blank" rel="noopener">https://colab.research.google.com/</a></li><li>Lundberg, S. M., Erion, G., Chen, H., y otros. (2020). From local explanations to global understanding with explainable AI for trees. <i>Nature Machine Intelligence, 2</i>(1), 56–67. <a href="https://doi.org/10.1038/s42256-019-0138-9" target="_blank" rel="noopener">https://doi.org/10.1038/s42256-019-0138-9</a></li><li>Lundberg, S. M., & Lee, S.-I. (2017). A unified approach to interpreting model predictions. <i>Advances in Neural Information Processing Systems, 30</i>. <a href="https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html" target="_blank" rel="noopener">https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html</a></li><li>McAdoo, T., Denneny, S., & Lee, C. (2025, 9 de septiembre). Citing generative AI in APA Style: Part 1—Reference formats. <i>APA Style Blog</i>. <a href="https://apastyle.apa.org/blog/cite-generative-ai-references" target="_blank" rel="noopener">https://apastyle.apa.org/blog/cite-generative-ai-references</a></li><li>McInnes, L., Healy, J., & Melville, J. (2018). <i>UMAP: Uniform manifold approximation and projection for dimension reduction</i> [Preimpresión]. arXiv. <a href="https://arxiv.org/abs/1802.03426" target="_blank" rel="noopener">https://arxiv.org/abs/1802.03426</a></li><li>Mitchell, M., Wu, S., Zaldivar, A., Barnes, P., Vasserman, L., Hutchinson, B., Spitzer, E., Raji, I. D., & Gebru, T. (2019). Model cards for model reporting. En <i>Proceedings of the Conference on Fairness, Accountability, and Transparency</i> (pp. 220–229). ACM. <a href="https://doi.org/10.1145/3287560.3287596" target="_blank" rel="noopener">https://doi.org/10.1145/3287560.3287596</a></li><li>pandas development team. (2026). <i>pandas documentation</i> (versión 3.0.6). <a href="https://pandas.pydata.org/docs/" target="_blank" rel="noopener">https://pandas.pydata.org/docs/</a></li><li>Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., Prettenhofer, P., Weiss, R., Dubourg, V., Vanderplas, J., Passos, A., Cournapeau, D., Brucher, M., Perrot, M., & Duchesnay, É. (2011). Scikit-learn: Machine learning in Python. <i>Journal of Machine Learning Research, 12</i>, 2825–2830. <a href="https://jmlr.org/papers/v12/pedregosa11a.html" target="_blank" rel="noopener">https://jmlr.org/papers/v12/pedregosa11a.html</a></li><li>Plotly. (s. f.). <i>Plotly JavaScript open source graphing library</i>. <a href="https://plotly.com/javascript/" target="_blank" rel="noopener">https://plotly.com/javascript/</a></li><li>scikit-learn developers. (s. f.-a). <i>Probability calibration</i> (versión 1.9.1). <a href="https://scikit-learn.org/stable/modules/calibration.html" target="_blank" rel="noopener">https://scikit-learn.org/stable/modules/calibration.html</a></li><li>scikit-learn developers. (s. f.-b). <i>Validation curves: Plotting scores to evaluate models</i> (versión 1.9.1). <a href="https://scikit-learn.org/stable/modules/learning_curve.html" target="_blank" rel="noopener">https://scikit-learn.org/stable/modules/learning_curve.html</a></li><li>SHAP developers. (s. f.). <i>Welcome to the SHAP documentation</i>. <a href="https://shap.readthedocs.io/en/latest/" target="_blank" rel="noopener">https://shap.readthedocs.io/en/latest/</a></li><li>Ulianova, S. (s. f.). <i>Cardiovascular Disease dataset</i> [Conjunto de datos]. Kaggle. <a href="https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset" target="_blank" rel="noopener">https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset</a></li><li>UMAP developers. (s. f.). <i>UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction</i> [Documentación]. <a href="https://umap-learn.readthedocs.io/en/latest/" target="_blank" rel="noopener">https://umap-learn.readthedocs.io/en/latest/</a></li><li>van der Maaten, L., & Hinton, G. (2008). Visualizing data using t-SNE. <i>Journal of Machine Learning Research, 9</i>, 2579–2605. <a href="https://www.jmlr.org/papers/v9/vandermaaten08a.html" target="_blank" rel="noopener">https://www.jmlr.org/papers/v9/vandermaaten08a.html</a></li><li>Wattenberg, M., Viégas, F., & Johnson, I. (2016). How to use t-SNE effectively. <i>Distill, 1</i>(10). <a href="https://doi.org/10.23915/distill.00002" target="_blank" rel="noopener">https://doi.org/10.23915/distill.00002</a></li><li>Whelton, P. K., Carey, R. M., Aronow, W. S., y otros. (2017). 2017 ACC/AHA/AAPA/ABC/ACPM/AGS/APhA/ASH/ASPC/NMA/PCNA guideline for the prevention, detection, evaluation, and management of high blood pressure in adults. <i>Hypertension</i>. <a href="https://doi.org/10.1161/HYP.0000000000000065" target="_blank" rel="noopener">https://doi.org/10.1161/HYP.0000000000000065</a></li><li>XGBoost developers. (2026). <i>XGBoost documentation</i> (versión 3.4.2). <a href="https://xgboost.readthedocs.io/en/stable/" target="_blank" rel="noopener">https://xgboost.readthedocs.io/en/stable/</a></li><li>Youden, W. J. (1950). Index for rating diagnostic tests. <i>Cancer, 3</i>, 32–35. <a href="https://pubmed.ncbi.nlm.nih.gov/15405679/" target="_blank" rel="noopener">https://pubmed.ncbi.nlm.nih.gov/15405679/</a></li></ol></div>
+</section>
+</main>
+
+<footer><div class="wrap gutter">Proyecto final de Visualización de Datos · Fundación Universitaria San Mateo · Omar Libardo Acelas Angulo · Tutor: Sergio Lara · 2026. Herramienta educativa; no sustituye el criterio médico.</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.35.2/plotly.min.js"></script>
+<script>window.Plotly||document.write('<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"><\/script>');</script>
+<script id="datos" type="application/json">__DATA__</script>
+<script>
+(function(){
+"use strict";
+const D = JSON.parse(document.getElementById("datos").textContent);
+const E = D.eda, M = D.modelos, L = D.latente;
+const MODELOS = ["Regresión logística","Random Forest","XGBoost"];
+const NOMBRE_VAR = {edad:"Edad",sexo_hombre:"Sexo: hombre",altura:"Altura",peso:"Peso",imc:"IMC",sistolica:"Sistólica",diastolica:"Diastólica",
+  colesterol_2:"Colesterol alto",colesterol_3:"Colesterol muy alto",glucosa_2:"Glucosa alta",glucosa_3:"Glucosa muy alta",fuma:"Fuma",alcohol:"Alcohol",activo:"Activo"};
+const fmt = (v,d=3) => Number(v).toLocaleString("es-CO",{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct = (v,d=0) => (v*100).toLocaleString("es-CO",{minimumFractionDigits:d,maximumFractionDigits:d})+" %";
+const ent = v => Number(v).toLocaleString("es-CO");
+const $ = id => document.getElementById(id);
+const S = {umbral:0.33, modeloU:"XGBoost", curva:"XGBoost", metodo:"UMAP", punto:null};
+
+/* ---------- Tema ---------- */
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let T = {};
+function leerTema(){ ["surface","ink","ink-2","muted","line","c0","c1","c2","c3","n1","n2","accent","good","crit","paper"].forEach(k=>T[k]=css("--"+k)); T.modelo={"Regresión logística":T.c0,"Random Forest":T.c1,"XGBoost":T.c2}; }
+function lay(extra){
+  const ax = {gridcolor:T.line,zerolinecolor:T.line,linecolor:T.line,tickfont:{color:T["ink-2"],size:11},title:{font:{color:T["ink-2"],size:12}},automargin:true};
+  const base = {paper_bgcolor:"rgba(0,0,0,0)",plot_bgcolor:"rgba(0,0,0,0)",font:{family:"Source Sans 3, Segoe UI, sans-serif",color:T["ink-2"],size:12},
+    margin:{l:56,r:16,t:16,b:48},hoverlabel:{bgcolor:T.surface,bordercolor:T.line,font:{color:T.ink,family:"JetBrains Mono, monospace",size:12}},
+    legend:{orientation:"h",y:-0.2,x:0,font:{color:T["ink-2"]}},modebar:{bgcolor:"rgba(0,0,0,0)",color:T.muted,activecolor:T.accent},xaxis:Object.assign({},ax),yaxis:Object.assign({},ax)};
+  for (const k in extra){ if ((k==="xaxis"||k==="yaxis"||k==="xaxis2"||k==="yaxis2") ) base[k]=Object.assign({},ax,base[k]||{},extra[k]); else base[k]=extra[k]; }
+  return base;
+}
+const LEG = {orientation:"h",x:0,xanchor:"left",xref:"paper",yref:"container",y:0.01,yanchor:"bottom",font:{size:12}};
+const CFG = {displaylogo:false,responsive:true,modeBarButtonsToRemove:["select2d","lasso2d","autoScale2d","toggleSpikelines","hoverCompareCartesian","hoverClosestCartesian"]};
+const plot = (id,tr,ly) => Plotly.react(id,tr,ly,CFG);
+const rango = v => { const lo=Math.min(0,...v), hi=Math.max(0,...v), pad=(hi-lo)*0.22; return [lo-(lo<0?pad:0), hi+(hi>0?pad:0)]; };
+
+/* ---------- ECG del encabezado ---------- */
+(function(){ let d="M0 30", x=0; while(x<1200){ d+=` L${x+30} 30 L${x+36} 26 L${x+42} 30 L${x+50} 30 L${x+53} 35 L${x+57} 3 L${x+61} 42 L${x+64} 30 L${x+76} 30 L${x+86} 23 L${x+96} 30 L${x+150} 30`; x+=150; } $("ecgPath").setAttribute("d",d); })();
+
+/* ---------- Utilidades de métricas ---------- */
+const iU = u => Math.round(u*100)-1;
+function met(c){ const [vp,fp,vn,fn]=c; return {vp,fp,vn,fn,sens:vp/(vp+fn),espe:vn/(vn+fp),prec:vp+fp?vp/(vp+fp):NaN,exac:(vp+vn)/(vp+fp+vn+fn),alerta:(vp+fp)/(vp+fp+vn+fn)}; }
+const sig = z => 1/(1+Math.exp(-z));
+
+/* ================= RESUMEN ================= */
+function rResumen(){
+  const x = M.prueba.find(r=>r.Modelo==="XGBoost"), t = met(M.umbral.conteos.XGBoost[iU(M.umbral.tamizaje)]);
+  const imp = Object.entries(M.importancia.shap).sort((a,b)=>b[1]-a[1]);
+  $("kpis").innerHTML = [
+    [ent(E.meta.n_limpio),"pacientes analizados",`de ${ent(E.meta.n_original)}; ${pct(1-E.meta.n_limpio/E.meta.n_original,1)} eran errores`],
+    [fmt(x["AUC-ROC"]),"AUC-ROC de XGBoost","en 13.703 pacientes de prueba"],
+    [pct(t.sens),"sensibilidad en tamizaje",`umbral ${fmt(M.umbral.tamizaje,2)}: detecta 85 de cada 100 enfermos`],
+    [fmt(imp[0][1]/imp[1][1],1)+"×","peso de la sistólica",`frente a la edad, la segunda variable (SHAP)`]
+  ].map(k=>`<div class="kpi"><span class="v num">${k[0]}</span><span class="l">${k[1]}</span><span class="s">${k[2]}</span></div>`).join("");
+  $("legendChips").innerHTML = [["c0","Sin ECV · falso positivo"],["c1","Con ECV · falso negativo"],["n1","Acierto del modelo"],["c2","XGBoost (en gráficos de modelos)"]]
+    .map(([c,t])=>`<span class="chip"><span style="width:10px;height:10px;border-radius:50%;background:var(--${c})"></span>${t}</span>`).join("");
+}
+
+/* ================= DATOS ================= */
+function rDatos(){
+  const f = E.embudo.slice().reverse();
+  plot("chFunnel",[{type:"bar",orientation:"h",y:f.map(e=>e.regla),x:f.map(e=>e.eliminados),marker:{color:T.c1},
+     text:f.map(e=>ent(e.eliminados)),textposition:"outside",cliponaxis:false,textfont:{color:T["ink-2"]},
+     customdata:f.map(e=>e.justificacion),hovertemplate:"<b>%{y}</b><br>%{x} registros eliminados<br>%{customdata}<extra></extra>"}],
+     lay({margin:{l:10,r:40,t:8,b:36},xaxis:{title:{text:"Registros eliminados"}},yaxis:{gridcolor:"rgba(0,0,0,0)"}}));
+  const R = E.presion_cruda, ok=[],bad=[];
+  R.sistolica.forEach((s,i)=>{ if(s>0&&R.diastolica[i]>0) (R.anomalo[i]?bad:ok).push(i); });
+  const tr = (idx,c,n)=>({type:"scattergl",mode:"markers",name:n,x:idx.map(i=>R.sistolica[i]),y:idx.map(i=>R.diastolica[i]),marker:{color:c,size:5,opacity:.55},
+     hovertemplate:"Sistólica %{x} · Diastólica %{y}<extra>"+n+"</extra>"});
+  plot("chRaw",[tr(ok,T.c0,"Plausible (muestra)"),tr(bad,T.c1,"Anómalo"),{type:"scatter",mode:"lines",x:[10,20000],y:[10,20000],line:{color:T.muted,dash:"dot",width:1},hoverinfo:"skip",showlegend:false}],
+     lay({margin:{l:56,r:10,t:8,b:40},xaxis:{type:"log",title:{text:"Sistólica (mmHg)"}},yaxis:{type:"log",title:{text:"Diastólica (mmHg)"}},legend:LEG}));
+  rDist(); rPrev();
+  const C = E.correlacion, nom = C.variables.map(v=>v==="cardio"?"ECV":(NOMBRE_VAR[v]||v));
+  plot("chCorr",[{type:"heatmap",z:C.matriz,x:nom,y:nom,zmin:-1,zmax:1,colorscale:[[0,T.c0],[.5,T.n2],[1,T.crit]],
+     hovertemplate:"%{y} · %{x}<br>r = %{z:.2f}<extra></extra>",colorbar:{thickness:10,tickfont:{color:T["ink-2"]},outlinewidth:0}}],
+     lay({margin:{l:10,r:10,t:8,b:10},xaxis:{tickangle:-45,gridcolor:"rgba(0,0,0,0)"},yaxis:{autorange:"reversed",gridcolor:"rgba(0,0,0,0)"}}));
+}
+(function initEdad(){ const opts=[30,35,40,45,50,55,60,65]; $("dEdadMin").innerHTML=opts.slice(0,-1).map(v=>`<option value="${v===30?0:v}">${v}</option>`).join("");
+  $("dEdadMax").innerHTML=opts.slice(1).map(v=>`<option ${v===65?"selected":""}>${v}</option>`).join(""); })();
+const BINS = {sistolica:[80,250,5],diastolica:[40,160,5],edad:[29,66,1],imc:[13,60,1],peso:[35,180,3],altura:[130,210,2]};
+function rDist(){
+  const v=$("dVar").value, sx=$("dSexo").value, a=+$("dEdadMin").value, b=+$("dEdadMax").value, col=$("dCol").value, m=E.muestra;
+  const idx=[]; for(let i=0;i<m.edad.length;i++){ if(sx&&m.sexo[i]!==sx)continue; if(m.edad[i]<a||m.edad[i]>=b+ (b===65?1:0))continue; if(col&&String(m.colesterol[i])!==col)continue; idx.push(i); }
+  const g0=idx.filter(i=>m.cardio[i]===0).map(i=>m[v][i]), g1=idx.filter(i=>m.cardio[i]===1).map(i=>m[v][i]);
+  const med = arr => { if(!arr.length) return NaN; const s=arr.slice().sort((x,y)=>x-y); return s[Math.floor(s.length/2)]; };
+  const [lo,hi,sz]=BINS[v], label=$("dVar").selectedOptions[0].text;
+  $("dStats").innerHTML = idx.length? `<b>${ent(idx.length)}</b> pacientes con este filtro · <b>${pct(g1.length/idx.length)}</b> con ECV · mediana ${fmt(med(g0),0)} (sin ECV) frente a ${fmt(med(g1),0)} (con ECV)` : "Ningún paciente cumple este filtro; amplíe el rango de edad.";
+  const h=(x,c,n)=>({type:"histogram",x,name:n,histnorm:"percent",opacity:.6,marker:{color:c,line:{color:T.surface,width:1}},xbins:{start:lo,end:hi,size:sz},
+     hovertemplate:"%{x}: %{y:.1f} % del grupo<extra>"+n+"</extra>"});
+  plot("chDist",[h(g0,T.c0,"Sin ECV"),h(g1,T.c1,"Con ECV")],lay({barmode:"overlay",bargap:.05,xaxis:{title:{text:label}},yaxis:{title:{text:"% del grupo"}},legend:LEG}));
+}
+["dVar","dSexo","dEdadMin","dEdadMax","dCol"].forEach(id=>$(id).addEventListener("change",rDist));
+const ETQ = {colesterol:{1:"Normal",2:"Alto",3:"Muy alto"},glucosa:{1:"Normal",2:"Alta",3:"Muy alta"},fuma:{0:"No",1:"Sí"},alcohol:{0:"No",1:"Sí"},activo:{0:"No",1:"Sí"}};
+function rPrev(){
+  const k=$("pDim").value, P=E.prevalencia[k], et=P.nivel.map(n=>(ETQ[k]&&ETQ[k][n])||n);
+  plot("chPrev",[{type:"bar",x:et,y:P.tasa.map(t=>t*100),marker:{color:T.c1},text:P.tasa.map(t=>pct(t)),textposition:"outside",cliponaxis:false,textfont:{color:T["ink-2"]},
+     customdata:P.n,hovertemplate:"<b>%{x}</b><br>%{y:.1f} % con ECV<br>n = %{customdata:,}<extra></extra>"}],
+     lay({margin:{l:52,r:10,t:16,b:40},yaxis:{title:{text:"% con ECV"},range:[0,100]},xaxis:{gridcolor:"rgba(0,0,0,0)"},
+       shapes:[{type:"line",xref:"paper",x0:0,x1:1,y0:E.meta.prevalencia*100,y1:E.meta.prevalencia*100,line:{color:T.muted,dash:"dot",width:1}}],
+       annotations:[{xref:"paper",x:0,y:E.meta.prevalencia*100,text:"promedio general",showarrow:false,yshift:9,xanchor:"left",font:{size:11,color:T.muted}}]}));
+}
+$("pDim").addEventListener("change",rPrev);
+
+/* ================= MODELOS ================= */
+function seg(id,opts,get,set){ const el=$(id); el.innerHTML=opts.map(o=>`<button type="button" data-v="${o}">${o}</button>`).join("");
+  const sync=()=>el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===get())));
+  el.addEventListener("click",e=>{const b=e.target.closest("button"); if(!b)return; set(b.dataset.v); sync();}); sync(); }
+function rModelos(){
+  const cols=["AUC-ROC","AUC-PR","Exactitud","Sensibilidad","Especificidad","Precisión","F1","Brier"];
+  $("tMetrics").innerHTML = `<thead><tr><th>Modelo</th>${cols.map(c=>`<th class="num">${c}</th>`).join("")}</tr></thead><tbody>`+
+    M.prueba.map(r=>`<tr class="${r.Modelo===M.mejor?"best":""}"><td><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${T.modelo[r.Modelo]};margin-right:7px"></span>${r.Modelo}${r.Modelo===M.mejor?" · mejor":""}</td>${cols.map(c=>`<td class="num mono">${fmt(r[c])}</td>`).join("")}</tr>`).join("")+"</tbody>";
+  plot("chCV",MODELOS.map(n=>({type:"scatter",mode:"markers",name:n,x:M.cv[n]["AUC-ROC"],y:Array(5).fill(n),marker:{color:T.modelo[n],size:11,line:{color:T.surface,width:2}},
+     hovertemplate:"AUC %{x:.4f}<extra>"+n+"</extra>"})),lay({showlegend:false,margin:{l:10,r:16,t:8,b:40},xaxis:{title:{text:"AUC-ROC por pliegue"}},yaxis:{gridcolor:"rgba(0,0,0,0)"}}));
+  plot("chROC",MODELOS.map(n=>({type:"scatter",mode:"lines",name:`${n} · ${fmt(M.prueba.find(r=>r.Modelo===n)["AUC-ROC"])}`,x:M.roc[n].fpr,y:M.roc[n].tpr,line:{color:T.modelo[n],width:2},
+     hovertemplate:"FPR %{x:.2f} · Sensibilidad %{y:.2f}<extra>"+n+"</extra>"})).concat([{type:"scatter",mode:"lines",x:[0,1],y:[0,1],line:{color:T.muted,dash:"dot",width:1},hoverinfo:"skip",name:"Azar"}]),
+     lay({margin:{l:50,r:10,t:8,b:44},xaxis:{title:{text:"Tasa de falsos positivos"},range:[0,1]},yaxis:{title:{text:"Sensibilidad"},range:[0,1.02]},legend:{x:.42,y:.05,orientation:"v",bgcolor:"rgba(0,0,0,0)"}}));
+  plot("chPR",MODELOS.map(n=>({type:"scatter",mode:"lines",name:n,x:M.pr[n].recall,y:M.pr[n].precision,line:{color:T.modelo[n],width:2},
+     hovertemplate:"Sensibilidad %{x:.2f} · Precisión %{y:.2f}<extra>"+n+"</extra>"})),
+     lay({margin:{l:50,r:10,t:8,b:44},xaxis:{title:{text:"Sensibilidad"}},yaxis:{title:{text:"Precisión"},range:[.45,1]},legend:LEG}));
+  rCurvas();
+}
+function banda(x,m,s,c,n,dash){ const up=m.map((v,i)=>v+s[i]), dn=m.map((v,i)=>v-s[i]);
+  return [{type:"scatter",mode:"lines",x:x.concat(x.slice().reverse()),y:up.concat(dn.reverse()),fill:"toself",fillcolor:c,opacity:.15,line:{width:0},hoverinfo:"skip",showlegend:false},
+    {type:"scatter",mode:"lines+markers",name:n,x,y:m,line:{color:c,width:2,dash:dash||"solid"},marker:{size:6},hovertemplate:"%{x}: AUC %{y:.4f}<extra>"+n+"</extra>"}]; }
+function rCurvas(){
+  const n=S.curva, V=M.curvas_validacion[n], A=M.curvas_aprendizaje[n], c=T.modelo[n];
+  const lg = n==="Regresión logística";
+  plot("chVal",[...banda(V.valores,V.ent_media,V.ent_std,T["ink-2"],"Entrenamiento"),...banda(V.valores,V.val_media,V.val_std,c,"Validación cruzada")],
+    lay({xaxis:{title:{text:V.parametro},type:lg?"log":"linear"},yaxis:{title:{text:"AUC-ROC"}},legend:LEG,
+      shapes:[{type:"line",x0:lg?Math.log10(V.elegido):V.elegido,x1:lg?Math.log10(V.elegido):V.elegido,yref:"paper",y0:0,y1:1,line:{color:T.accent,dash:"dash",width:1.5}}],
+      annotations:[{x:lg?Math.log10(V.elegido):V.elegido,yref:"paper",y:0.02,text:"elegido: "+(lg?fmt(V.elegido,3):V.elegido),showarrow:false,xanchor:"left",xshift:4,font:{color:T.accent,size:11}}]}));
+  plot("chLearn",[...banda(A.n,A.ent_media,A.ent_std,T["ink-2"],"Entrenamiento"),...banda(A.n,A.val_media,A.val_std,c,"Validación cruzada")],
+    lay({xaxis:{title:{text:"Pacientes de entrenamiento"}},yaxis:{title:{text:"AUC-ROC"}},legend:LEG}));
+  const brecha = A.ent_media.at(-1)-A.val_media.at(-1);
+  const tv = {"Regresión logística":"Las curvas casi coinciden y se aplanan desde C ≈ 0,018: no hay sobreajuste, y el límite es la forma lineal del modelo.",
+    "Random Forest":"Desde una profundidad de 8, el entrenamiento sigue subiendo mientras la validación se estanca y luego baja: el bosque empieza a memorizar.",
+    "XGBoost":"El máximo llega con árboles de solo 3 niveles. Con más profundidad, el entrenamiento llega a 0,97 y la validación cae: es sobreajuste clásico."};
+  $("txtVal").textContent = tv[n];
+  $("txtLearn").textContent = `Brecha final entre curvas: ${fmt(brecha,3)}. La validación se aplana hacia los 15.000 pacientes; con 44.000 ya no mejora. Más datos no ayudarían, mejores variables sí.`;
+}
+
+/* ================= UMBRAL ================= */
+function setUmbral(u){ S.umbral=Math.min(.99,Math.max(.01,Math.round(u*100)/100));
+  ["uSlider","lSlider","eSlider"].forEach(id=>$(id).value=S.umbral); ["uVal","lVal","eVal"].forEach(id=>$(id).textContent=fmt(S.umbral,2));
+  if(!$("p-umbral").hidden) rUmbral(); if(!$("p-latente").hidden) rLatente(true); if(!$("p-equidad").hidden) rEquidad(); }
+["uSlider","lSlider","eSlider"].forEach(id=>$(id).addEventListener("input",e=>setUmbral(+e.target.value)));
+document.querySelectorAll("[data-u]").forEach(b=>b.addEventListener("click",()=>setUmbral(+b.dataset.u)));
+$("bYouden").textContent=`Youden · ${fmt(M.umbral.youden,2)}`; $("bYouden").addEventListener("click",()=>setUmbral(M.umbral.youden));
+$("bTamiz").textContent=`Tamizaje · ${fmt(M.umbral.tamizaje,2)}`; $("bTamiz").addEventListener("click",()=>setUmbral(M.umbral.tamizaje));
+function rUmbral(){
+  const n=S.modeloU, C=M.umbral.conteos[n], m=met(C[iU(S.umbral)]);
+  $("cmModel").textContent = `· ${n} · umbral ${fmt(S.umbral,2)}`;
+  $("cm").innerHTML = `<span></span><span class="h">Predicho: con ECV</span><span class="h">Predicho: sin ECV</span>
+    <span class="h">Real: con ECV</span><div class="cell ok"><b class="num">${ent(m.vp)}</b>verdaderos positivos</div><div class="cell fn"><b class="num">${ent(m.fn)}</b>enfermos no detectados</div>
+    <span class="h">Real: sin ECV</span><div class="cell fp"><b class="num">${ent(m.fp)}</b>falsas alarmas</div><div class="cell ok"><b class="num">${ent(m.vn)}</b>verdaderos negativos</div>`;
+  $("uChips").innerHTML = [["Sensibilidad",pct(m.sens,1)],["Especificidad",pct(m.espe,1)],["Precisión",isNaN(m.prec)?"–":pct(m.prec,1)],["Exactitud",pct(m.exac,1)],["Alertas",pct(m.alerta,1)]]
+    .map(([a,b])=>`<span class="chip">${a} <b>${b}</b></span>`).join("");
+  const us=M.umbral.valores, ms=C.map(met);
+  plot("chThr",[{n:"Sensibilidad",k:"sens",c:T.c1},{n:"Especificidad",k:"espe",c:T.c0},{n:"Precisión",k:"prec",c:T.c2}].map(s=>({type:"scatter",mode:"lines",name:s.n,x:us,
+      y:ms.map(o=>isNaN(o[s.k])?null:o[s.k]),line:{color:s.c,width:2},hovertemplate:"umbral %{x:.2f}: %{y:.3f}<extra>"+s.n+"</extra>"})),
+    lay({xaxis:{title:{text:"Umbral"},range:[0,1]},yaxis:{range:[0,1.02]},legend:LEG,
+      shapes:[{type:"line",x0:S.umbral,x1:S.umbral,yref:"paper",y0:0,y1:1,line:{color:T.ink,width:2}}]}));
+  plot("chCal",MODELOS.map(k=>({type:"scatter",mode:"lines+markers",name:`${k} · Brier ${fmt(M.calibracion[k].brier)}`,x:M.calibracion[k].predicha,y:M.calibracion[k].observada,
+      line:{color:T.modelo[k],width:2},marker:{size:7},hovertemplate:"predicha %{x:.2f} → real %{y:.2f}<extra>"+k+"</extra>"}))
+      .concat([{type:"scatter",mode:"lines",x:[0,1],y:[0,1],line:{color:T.muted,dash:"dot",width:1},name:"Calibración perfecta",hoverinfo:"skip"}]),
+    lay({xaxis:{title:{text:"Probabilidad predicha"},range:[0,1]},yaxis:{title:{text:"Proporción real con ECV"},range:[0,1]},legend:{orientation:"v",x:.02,y:.98,bgcolor:"rgba(0,0,0,0)"}}));
+}
+
+/* ================= ESPACIO LATENTE ================= */
+const COL = L.variables.reduce((o,v,i)=>(o[v]=i,o),{});
+function resultado(i){ const p=L.prob[i]>=S.umbral, r=L.real[i]===1; return p&&r?"VP":!p&&!r?"VN":p?"FP":"FN"; }
+function rLatente(soloColor){
+  const P=L.coords[S.metodo], N=L.n, modo=$("lColor").value, x=P.map(p=>p[0]), y=P.map(p=>p[1]);
+  const pac=L.pacientes, hover=[];
+  for(let i=0;i<N;i++) hover.push(`Edad ${pac.edad[i]} · ${pac.sexo_hombre[i]?"Hombre":"Mujer"}<br>Presión ${pac.sistolica[i]}/${pac.diastolica[i]} · IMC ${pac.imc[i]}<br>Riesgo predicho ${pct(L.prob[i])} · ${L.real[i]?"con ECV":"sin ECV"}`);
+  let traces=[];
+  const grupo=(clave,orden)=>orden.map(([v,c,n,sz])=>{ const idx=[]; for(let i=0;i<N;i++) if(clave(i)===v) idx.push(i);
+     return {type:"scattergl",mode:"markers",name:`${n} (${ent(idx.length)})`,x:idx.map(i=>x[i]),y:idx.map(i=>y[i]),customdata:idx,text:idx.map(i=>hover[i]),
+       hovertemplate:"%{text}<extra></extra>",marker:{color:c,size:sz||6,opacity:.75}}; });
+  if(modo==="resultado") traces=grupo(resultado,[["VN",T.n2,"Verdadero negativo"],["VP",T.n1,"Verdadero positivo"],["FP",T.c0,"Falsa alarma",7],["FN",T.c1,"Enfermo no detectado",7]]);
+  else if(modo==="real") traces=grupo(i=>L.real[i],[[0,T.c0,"Sin ECV"],[1,T.c1,"Con ECV"]]);
+  else if(modo==="sexo") traces=grupo(i=>pac.sexo_hombre[i],[[0,T.c0,"Mujer"],[1,T.c1,"Hombre"]]);
+  else if(modo==="colesterol") traces=grupo(i=>pac.colesterol_3[i]?3:pac.colesterol_2[i]?2:1,[[1,T.c0,"Normal"],[2,T.c1,"Alto"],[3,T.c2,"Muy alto"]]);
+  else { const v = modo==="prob"?L.prob:pac[modo], nm={prob:"Riesgo",sistolica:"Sistólica",edad:"Edad"}[modo];
+     traces=[{type:"scattergl",mode:"markers",x,y,customdata:[...Array(N).keys()],text:hover,hovertemplate:"%{text}<extra></extra>",showlegend:false,
+       marker:{color:v,size:6,opacity:.8,colorscale:[[0,T.n2],[1,modo==="prob"?T.c1:T.c0]],colorbar:{title:{text:nm,font:{color:T["ink-2"]}},thickness:10,outlinewidth:0,tickfont:{color:T["ink-2"]}}}}]; }
+  if(S.punto!==null) traces.push({type:"scatter",mode:"markers",x:[x[S.punto]],y:[y[S.punto]],hoverinfo:"skip",showlegend:false,
+      marker:{size:16,color:"rgba(0,0,0,0)",line:{color:T.ink,width:2.5}}});
+  const ax={showticklabels:false,showgrid:false,zeroline:false,showline:false,title:{text:""}};
+  plot("chLatent",traces,lay({margin:{l:8,r:8,t:8,b:8},xaxis:ax,yaxis:ax,legend:{orientation:"h",y:-0.02,x:0},uirevision:S.metodo,dragmode:"pan"}));
+  if(!$("chLatent")._clic){ $("chLatent").on("plotly_click",ev=>{ const pt=ev.points[0]; const i=Array.isArray(pt.customdata)?pt.customdata[0]:pt.customdata; if(i==null)return; S.punto=i; rLatente(); });
+     $("chLatent")._clic=true; }
+  if(!soloColor || S.punto!==null) rPaciente();
+}
+function rPaciente(){
+  if(S.punto===null){ // punto de ejemplo al abrir: un enfermo no detectado con riesgo cercano al umbral
+    let best=0,dist=9; for(let i=0;i<L.n;i++){ if(L.real[i]===1&&L.prob[i]<S.umbral){ const d=Math.abs(L.prob[i]-0.25); if(d<dist){dist=d;best=i;} } } S.punto=best; rLatente(); return; }
+  const i=S.punto, p=L.pacientes, r=resultado(i);
+  const cls={FN:["fn","Enfermo no detectado"],FP:["fp","Falsa alarma"],VP:["ok","Verdadero positivo"],VN:["ok","Verdadero negativo"]}[r];
+  const col = p.colesterol_3[i]?"Muy alto":p.colesterol_2[i]?"Alto":"Normal", glu=p.glucosa_3[i]?"Muy alta":p.glucosa_2[i]?"Alta":"Normal";
+  const sv=L.shap[i].map((v,k)=>[L.variables[k],v]).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])), top=sv.slice(0,7), resto=sv.slice(7).reduce((s,a)=>s+a[1],0);
+  $("patient").innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h3>Paciente n.º ${i+1}</h3><span class="tag ${cls[0]}">${cls[1]}</span></div>
+    <div class="facts">
+      <div><span>Edad</span><b class="mono">${p.edad[i]} años</b></div><div><span>Sexo</span><b>${p.sexo_hombre[i]?"Hombre":"Mujer"}</b></div>
+      <div><span>Presión</span><b class="mono">${p.sistolica[i]}/${p.diastolica[i]}</b></div><div><span>IMC</span><b class="mono">${p.imc[i]}</b></div>
+      <div><span>Colesterol</span><b>${col}</b></div><div><span>Glucosa</span><b>${glu}</b></div>
+      <div><span>Fuma · alcohol</span><b>${p.fuma[i]?"Sí":"No"} · ${p.alcohol[i]?"Sí":"No"}</b></div><div><span>Activo</span><b>${p.activo[i]?"Sí":"No"}</b></div>
+    </div>
+    <p class="byline">Riesgo predicho <b class="mono">${pct(L.prob[i],1)}</b> frente al umbral de ${fmt(S.umbral,2)} · Realidad: <b>${L.real[i]?"con ECV":"sin ECV"}</b></p>
+    <h3>Por qué (SHAP, en log-odds)</h3><div id="chWater" class="chart short"></div>
+    <p class="byline">Parte del riesgo base (${pct(sig(L.shap_base),0)}); las barras naranjas lo suben y las azules lo bajan. Su suma reconstruye exactamente el riesgo predicho.</p>`;
+  const etq=top.map(t=>NOMBRE_VAR[t[0]]).concat(["Otras 7 variables"]).reverse(), val=top.map(t=>t[1]).concat([resto]).reverse();
+  plot("chWater",[{type:"bar",orientation:"h",y:etq,x:val,marker:{color:val.map(v=>v>0?T.c1:T.c0)},text:val.map(v=>(v>0?"+":"")+fmt(v,2)),textposition:val.map(v=>v<0?"inside":"outside"),insidetextfont:{color:"#ffffff",family:"JetBrains Mono"},cliponaxis:false,
+      textfont:{color:T["ink-2"],family:"JetBrains Mono"},hovertemplate:"%{y}: %{x:.3f}<extra></extra>"}],
+    lay({margin:{l:10,r:40,t:4,b:30},xaxis:{zeroline:true,zerolinecolor:T.muted,range:rango(val)},yaxis:{gridcolor:"rgba(0,0,0,0)"}}));
+}
+$("lColor").addEventListener("change",()=>rLatente(true));
+function rCalidad(){
+  $("tQual").innerHTML = `<thead><tr><th>Espacio</th><th class="num">Confiabilidad</th><th class="num">AUC k-NN</th></tr></thead><tbody>`+
+    Object.entries(L.calidad).map(([k,v])=>`<tr><td>${k}</td><td class="num mono">${fmt(v.confiabilidad)}</td><td class="num mono">${fmt(v.auc_knn)}</td></tr>`).join("")+"</tbody>";
+}
+
+/* ================= EXPLICABILIDAD ================= */
+function rExplica(){
+  const s=Object.entries(M.importancia.shap).sort((a,b)=>a[1]-b[1]);
+  plot("chShap",[{type:"bar",orientation:"h",y:s.map(a=>NOMBRE_VAR[a[0]]),x:s.map(a=>a[1]),marker:{color:T.c2},text:s.map(a=>fmt(a[1],2)),textposition:"outside",cliponaxis:false,
+     textfont:{color:T["ink-2"]},hovertemplate:"%{y}: %{x:.3f}<extra></extra>"}],lay({margin:{l:10,r:40,t:8,b:40},xaxis:{title:{text:"Media de |SHAP| (log-odds)"}},yaxis:{gridcolor:"rgba(0,0,0,0)"}}));
+  const c=Object.entries(M.importancia.coef_logistica).sort((a,b)=>a[1]-b[1]);
+  plot("chCoef",[{type:"bar",orientation:"h",y:c.map(a=>NOMBRE_VAR[a[0]]),x:c.map(a=>a[1]),marker:{color:c.map(a=>a[1]>0?T.c1:T.c0)},text:c.map(a=>(a[1]>0?"+":"")+fmt(a[1],2)),
+     textposition:c.map(a=>a[1]<0?"inside":"outside"),insidetextfont:{color:"#ffffff"},cliponaxis:false,textfont:{color:T["ink-2"]},hovertemplate:"%{y}: %{x:.3f}<extra></extra>"}],
+     lay({margin:{l:10,r:44,t:8,b:40},xaxis:{title:{text:"Log-odds por desviación estándar"},zeroline:true,zerolinecolor:T.muted,range:rango(c.map(a=>a[1]))},yaxis:{gridcolor:"rgba(0,0,0,0)"}}));
+}
+
+/* ================= EQUIDAD ================= */
+const GRUPOS=[["sexo:Mujer","Mujeres"],["sexo:Hombre","Hombres"],["grupo_edad:30–44","30–44 años"],["grupo_edad:45–54","45–54 años"],["grupo_edad:55–65","55–65 años"]];
+function rEquidad(){
+  const rows=GRUPOS.map(([k,n])=>{const g=M.equidad[k]; return {n,k,N:g.n,auc:g.auc,...met(g.conteos[iU(S.umbral)])};});
+  const metr=[["sens","Sensibilidad",T.c1],["espe","Especificidad",T.c0],["alerta","Tasa de alerta",T.n1]];
+  plot("chEq",metr.map(([k,nm,c])=>({type:"bar",name:nm,x:rows.map(r=>r.n),y:rows.map(r=>r[k]),marker:{color:c},text:rows.map(r=>pct(r[k])),textposition:"outside",cliponaxis:false,
+     textfont:{color:T["ink-2"],size:11},hovertemplate:"%{x}: %{y:.3f}<extra>"+nm+"</extra>"})),
+    lay({barmode:"group",bargap:.25,yaxis:{range:[0,1.12],tickformat:".0%"},xaxis:{gridcolor:"rgba(0,0,0,0)"},legend:LEG,
+      shapes:[{type:"line",xref:"x",x0:1.5,x1:1.5,yref:"paper",y0:0,y1:1,line:{color:T.line,width:1}}]}));
+  $("tEq").innerHTML=`<thead><tr><th>Grupo</th><th class="num">Pacientes</th><th class="num">AUC</th><th class="num">Sensibilidad</th><th class="num">Especificidad</th><th class="num">Enfermos no detectados</th><th class="num">Falsas alarmas</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr><td>${r.n}</td><td class="num mono">${ent(r.N)}</td><td class="num mono">${fmt(r.auc)}</td><td class="num mono">${pct(r.sens,1)}</td><td class="num mono">${pct(r.espe,1)}</td><td class="num mono">${ent(r.fn)}</td><td class="num mono">${ent(r.fp)}</td></tr>`).join("")+"</tbody>";
+}
+
+/* ================= SIMULADOR ================= */
+const SIM=M.simulador;
+const CAMPOS=[["edad","Edad",30,65,1,"años"],["altura","Altura",140,200,1,"cm"],["peso","Peso",40,150,1,"kg"],["sistolica","Sistólica",90,200,5,"mmHg"],["diastolica","Diastólica",50,120,5,"mmHg"]];
+const PRESETS={a:{edad:42,sexo:0,altura:165,peso:64,sistolica:115,diastolica:75,col:1,glu:1,fuma:0,alcohol:0,activo:1},
+  b:{edad:58,sexo:1,altura:172,peso:92,sistolica:155,diastolica:95,col:3,glu:1,fuma:1,alcohol:0,activo:0}};
+(function construir(){
+  const f=$("simForm");
+  f.insertAdjacentHTML("beforeend",CAMPOS.map(([k,n,a,b,s,u])=>`<label class="field" for="s_${k}"><span>${n}</span><input type="range" id="s_${k}" min="${a}" max="${b}" step="${s}"><output id="o_${k}"></output></label>`).join("")+
+   `<div class="field"><span>Sexo</span><div class="seg" id="s_sexo"><button type="button" data-v="0">Mujer</button><button type="button" data-v="1">Hombre</button></div><span></span></div>
+    <div class="field"><span>Colesterol</span><div class="seg" id="s_col"><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Alto</button><button type="button" data-v="3">Muy alto</button></div><span></span></div>
+    <div class="field"><span>Glucosa</span><div class="seg" id="s_glu"><button type="button" data-v="1">Normal</button><button type="button" data-v="2">Alta</button><button type="button" data-v="3">Muy alta</button></div><span></span></div>
+    <div class="checks"><label><input type="checkbox" id="s_fuma"> Fuma</label><label><input type="checkbox" id="s_alcohol"> Consume alcohol</label><label><input type="checkbox" id="s_activo"> Hace actividad física</label></div>`);
+  CAMPOS.forEach(([k])=>$("s_"+k).addEventListener("input",rSim));
+  ["s_sexo","s_col","s_glu"].forEach(id=>$(id).addEventListener("click",e=>{const b=e.target.closest("button"); if(!b)return; $(id).dataset.v=b.dataset.v; rSim();}));
+  ["s_fuma","s_alcohol","s_activo"].forEach(id=>$(id).addEventListener("change",rSim));
+  document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>{cargar(PRESETS[b.dataset.preset]); rSim();}));
+  cargar(PRESETS.b);
+})();
+function cargar(p){ CAMPOS.forEach(([k])=>$("s_"+k).value=p[k]); $("s_sexo").dataset.v=p.sexo; $("s_col").dataset.v=p.col; $("s_glu").dataset.v=p.glu;
+  $("s_fuma").checked=!!p.fuma; $("s_alcohol").checked=!!p.alcohol; $("s_activo").checked=!!p.activo; }
+function categoriaPA(s,d){ if(s>180||d>120)return "Crisis hipertensiva"; if(s>=140||d>=90)return "HTA estadio 2"; if(s>=130||d>=80)return "HTA estadio 1"; if(s>=120)return "Elevada"; return "Normal"; }
+function vectorSim(){
+  const v=k=>+$("s_"+k).value, col=+$("s_col").dataset.v, glu=+$("s_glu").dataset.v, imc=v("peso")/Math.pow(v("altura")/100,2);
+  return {imc, x:{edad:v("edad"),sexo_hombre:+$("s_sexo").dataset.v,altura:v("altura"),peso:v("peso"),imc,sistolica:v("sistolica"),diastolica:v("diastolica"),
+    colesterol_2:+(col===2),colesterol_3:+(col===3),glucosa_2:+(glu===2),glucosa_3:+(glu===3),fuma:+$("s_fuma").checked,alcohol:+$("s_alcohol").checked,activo:+$("s_activo").checked}};
+}
+function riesgoLR(x){ let z=SIM.intercepto; const contrib=SIM.variables.map((k,i)=>{const c=SIM.coef[i]*(x[k]-SIM.media[i])/SIM.escala[i]; z+=c; return [k,c];}); return {p:sig(z),contrib}; }
+window.__riesgoLR = riesgoLR;
+function rSim(){
+  CAMPOS.forEach(([k,,,,,u])=>$("o_"+k).textContent=$("s_"+k).value+" "+u);
+  ["s_sexo","s_col","s_glu"].forEach(id=>$(id).querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===$(id).dataset.v))));
+  const {imc,x}=vectorSim(), {p,contrib}=riesgoLR(x), u=M.umbral.tamizaje;
+  $("sPct").textContent=pct(p); $("sNeedle").style.left=(p*100)+"%"; $("sThr").style.left=(u*100)+"%";
+  const alerta=p>=u;
+  $("sStatus").innerHTML=`<span class="dot" style="background:${alerta?"var(--c1)":"var(--c0)"}"></span>${alerta?"Supera el umbral de tamizaje: se recomendaría una evaluación más completa":"Por debajo del umbral de tamizaje"}`;
+  const cat=categoriaPA(x.sistolica,x.diastolica), prev=E.prevalencia.categoria_pa, ip=prev.nivel.indexOf(cat);
+  $("sChips").innerHTML=`<span class="chip">IMC <b>${fmt(imc,1)}</b></span><span class="chip">Presión <b>${cat}</b></span>`+(ip>=0?`<span class="chip">ECV observada en esa categoría <b>${pct(prev.tasa[ip])}</b></span>`:"");
+  const s=contrib.slice().sort((a,b)=>Math.abs(a[1])-Math.abs(b[1])).slice(-9);
+  if(!$("p-simulador").hidden) plot("chSim",[{type:"bar",orientation:"h",y:s.map(a=>NOMBRE_VAR[a[0]]),x:s.map(a=>a[1]),marker:{color:s.map(a=>a[1]>0?T.c1:T.c0)},
+     text:s.map(a=>(a[1]>0?"+":"")+fmt(a[1],2)),textposition:s.map(a=>a[1]<0?"inside":"outside"),insidetextfont:{color:"#ffffff",family:"JetBrains Mono"},cliponaxis:false,textfont:{color:T["ink-2"],family:"JetBrains Mono"},hovertemplate:"%{y}: %{x:.3f} log-odds<extra></extra>"}],
+     lay({margin:{l:10,r:44,t:4,b:36},xaxis:{title:{text:"Aporte en log-odds"},zeroline:true,zerolinecolor:T.muted,range:rango(s.map(a=>a[1]))},yaxis:{gridcolor:"rgba(0,0,0,0)"}}));
+}
+
+/* ================= Pestañas y tema ================= */
+const RENDER={resumen:rResumen,datos:rDatos,modelos:()=>{rModelos();},umbral:rUmbral,latente:()=>{rLatente();rCalidad();},explica:rExplica,equidad:rEquidad,simulador:rSim,ficha:()=>{}};
+let actual="resumen";
+function mostrar(t){
+  actual=t; document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));
+  document.querySelectorAll("section.panel").forEach(s=>s.hidden=(s.id!=="p-"+t));
+  try{ localStorage.setItem("cardio_tab",t); }catch(e){}
+  if(window.Plotly) RENDER[t]();
+}
+$("tablist").addEventListener("click",e=>{const b=e.target.closest(".tab"); if(b) mostrar(b.dataset.tab);});
+seg("segCurve",MODELOS,()=>S.curva,v=>{S.curva=v; rCurvas();});
+seg("segUModel",MODELOS,()=>S.modeloU,v=>{S.modeloU=v; rUmbral();});
+seg("segMethod",["PCA","t-SNE","UMAP"],()=>S.metodo,v=>{S.metodo=v; rLatente();});
+function retema(){ leerTema(); if(window.Plotly) RENDER[actual](); }
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",retema);
+new MutationObserver(retema).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+leerTema();
+let inicial="resumen"; const h=location.hash.replace("#","");
+try{ inicial = RENDER[h] ? h : (localStorage.getItem("cardio_tab")||"resumen"); }catch(e){ if(RENDER[h]) inicial=h; }
+if(!RENDER[inicial]) inicial="resumen";
+if(!window.Plotly){ document.querySelectorAll(".chart").forEach(c=>c.innerHTML='<p class="loading">No se pudo cargar la librería de gráficos. Revise la conexión y recargue la página.</p>'); }
+mostrar(inicial);
+})();
+</script>

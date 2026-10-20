@@ -1,0 +1,31 @@
+CARDIO360 · Predicción de riesgo cardiovascular
+Proyecto final de Visualización de Datos · Fundación Universitaria San Mateo
+Autor: Omar Libardo Acelas Angulo · Tutor: Sergio Lara · Octubre de 2026
+=====================================================================
+
+Sitio del proyecto: https://omarli-360.github.io/cardio360/
+Repositorio:        https://github.com/OmarLi-360/cardio360
+Instrucciones completas: GUIA_Cardio360.pdf (o GUIA_Cardio360.html).
+
+VER LOS RESULTADOS (sin instalar nada)
+  1. Doble clic en tablero\tablero_riesgo_cardiovascular.html (funciona sin internet).
+  2. Informe ejecutivo en la carpeta informe\.
+
+REPETIR EN GOOGLE COLAB (sin instalar nada)
+  1. En el sitio del proyecto, botón "Abrir en Colab" del cuaderno 01
+     (o colab.research.google.com > Archivo > Subir cuaderno > cuadernos\01_EDA_y_Limpieza.ipynb)
+  2. Entorno de ejecución > Ejecutar todas. Repetir con 02 y 03, en ese orden.
+
+REPETIR EN EL COMPUTADOR (Windows, Python 3.10 a 3.12), en el Símbolo del sistema (cmd):
+  cd C:\Cardio360
+  py -3.12 -m venv .venv
+  .venv\Scripts\activate
+  pip install -r requirements.txt
+  jupyter lab                      (ejecutar cuadernos 01, 02 y 03 en orden: Run > Run All Cells)
+  py construir_tablero.py          (regenera el tablero con los nuevos resultados)
+
+DATOS
+  datos\cardio_train.csv     original de Kaggle (S. Ulianova), 70.000 registros, separador ;
+  datos\cardio_depurado.csv  68.512 registros limpios, 16 columnas; separador ; y decimales con coma (Excel en español)
+
+Herramienta educativa; no sustituye el criterio médico.
