@@ -61,6 +61,12 @@ Ulianova, S. (s. f.). *Cardiovascular Disease dataset* [Conjunto de datos]. Kagg
 
 Herramienta educativa. No diagnostica ni reemplaza el criterio de un profesional de la salud.
 
-## Uso de inteligencia artificial
+## Uso de inteligencia artificial y responsabilidad de la autoría
 
-El proyecto se desarrolló con apoyo de Claude (Anthropic, 2026), un modelo de lenguaje grande, para localizar y verificar los datos, escribir el código, redactar el informe y comprobar la cibergrafía. El autor definió el alcance, validó las decisiones del análisis y es responsable del contenido. La cibergrafía completa está en el sitio y en la guía.
+El proyecto se desarrolló con el apoyo de dos herramientas de inteligencia artificial, Perplexity (Perplexity AI, 2026) y Claude (Anthropic, 2026), modelos de lenguaje grande utilizados como herramientas de asistencia durante distintas etapas del proceso. Su participación incluyó la búsqueda y verificación de fuentes de información, el apoyo en la construcción del código de los cuadernos de análisis y del tablero de visualización, la revisión y corrección de la redacción del informe y la comprobación de las referencias bibliográficas y la cibergrafía.
+
+El autor asumió la responsabilidad intelectual y metodológica del proyecto, que incluye el área y la problemática poblacional, la definición del problema de estudio, la formulación de los objetivos, la elaboración del plan de trabajo, la selección y justificación del conjunto de datos de carácter médico y la delimitación de las variables relevantes para el análisis. En esa misma línea, mediante la estrategia de Junta Técnica (una habilidad creada por el autor dentro de Claude para desarrollar ideas, construir soluciones y ejecutar proyectos evitando iteraciones ociosas e infructuosas, y optimizando los recursos más costosos: el tiempo humano y el procesamiento de IA), el autor definió los criterios de interpretación, la pertinencia de los procedimientos analíticos y la lectura de los resultados obtenidos, priorizando el estudio de los eventos de salud, sus patrones de comportamiento, su distribución y las posibles asociaciones entre las variables clínicas y epidemiológicas disponibles.
+
+La utilización de Claude constituyó un valioso apoyo técnico, documental y de programación, sin sustituir el juicio crítico del autor ni su responsabilidad sobre las decisiones metodológicas, la interpretación de los resultados y las conclusiones presentadas. El autor responde por la coherencia del proceso, la verificación de los resultados y la integridad del contenido entregado.
+
+La cibergrafía completa está en el sitio y en la guía.
