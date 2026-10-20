@@ -9,7 +9,7 @@ Instrucciones completas: GUIA_Cardio360.pdf (o GUIA_Cardio360.html).
 
 VER LOS RESULTADOS (sin instalar nada)
   1. Doble clic en tablero\tablero_riesgo_cardiovascular.html (funciona sin internet).
-  2. Informe ejecutivo en la carpeta informe\.
+  2. Informe ejecutivo y anexo del proceso del módulo en la carpeta informe\.
 
 REPETIR EN GOOGLE COLAB (sin instalar nada)
   1. En el sitio del proyecto, botón "Abrir en Colab" del cuaderno 01
