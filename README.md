@@ -29,7 +29,7 @@ cardio360/
 ├── cuadernos/                  los tres cuadernos, ya ejecutados
 ├── datos/                      cardio_train.csv (original) y cardio_depurado.csv (limpio)
 ├── resultados/                 eda.json, modelos.json, latente.json (salidas de los cuadernos)
-├── informe/                    informe ejecutivo (PDF y Word) y anexo del proceso del módulo
+├── informe/                    informe del proyecto final (PDF y Word), sus figuras y el anexo del proceso del módulo
 ├── recursos/                   plantilla del tablero y librería Plotly
 ├── assets/                     ícono e imagen para compartir
 ├── construir_tablero.py        regenera el tablero a partir de resultados/
@@ -47,6 +47,7 @@ pip install -r requirements.txt
 jupyter lab
 :: ejecutar los cuadernos 01, 02 y 03 en orden; luego:
 py construir_tablero.py
+py informe\figuras\generar_figuras.py
 ```
 
 Anexo con el proceso seguido durante el módulo (protocolo de estudio, foros y actividades integradoras): [`informe/Anexo_Informe_Proceso_Visualizacion_Datos.pdf`](informe/Anexo_Informe_Proceso_Visualizacion_Datos.pdf).
