@@ -387,6 +387,7 @@ footer{border-top:1px solid var(--line);padding-block:20px 32px;color:var(--mute
       <div class="chips" id="sChips"></div>
       <h3 style="margin-top:8px">Qué empuja este resultado <span class="byline">(frente al paciente promedio)</span></h3>
       <div id="chSim" class="chart"></div>
+      <p class="note" id="sNota"></p>
     </div>
   </div>
 </section>
@@ -698,9 +699,17 @@ function rSim(){
   const cat=categoriaPA(x.sistolica,x.diastolica), prev=E.prevalencia.categoria_pa, ip=prev.nivel.indexOf(cat);
   $("sChips").innerHTML=`<span class="chip">IMC <b>${fmt(imc,1)}</b></span><span class="chip">Presión <b>${cat}</b></span>`+(ip>=0?`<span class="chip">ECV observada en esa categoría <b>${pct(prev.tasa[ip])}</b></span>`:"");
   const s=contrib.slice().sort((a,b)=>Math.abs(a[1])-Math.abs(b[1])).slice(-9);
-  if(!$("p-simulador").hidden) plot("chSim",[{type:"bar",orientation:"h",y:s.map(a=>NOMBRE_VAR[a[0]]),x:s.map(a=>a[1]),marker:{color:s.map(a=>a[1]>0?T.c1:T.c0)},
-     text:s.map(a=>(a[1]>0?"+":"")+fmt(a[1],2)),textposition:s.map(a=>a[1]<0?"inside":"outside"),insidetextfont:{color:"#ffffff",family:"JetBrains Mono"},cliponaxis:false,textfont:{color:T["ink-2"],family:"JetBrains Mono"},hovertemplate:"%{y}: %{x:.3f} log-odds<extra></extra>"}],
-     lay({margin:{l:10,r:44,t:4,b:36},xaxis:{title:{text:"Aporte en log-odds"},zeroline:true,zerolinecolor:T.muted,range:rango(s.map(a=>a[1]))},yaxis:{gridcolor:"rgba(0,0,0,0)"}}));
+  /* Variables cuyo efecto en el modelo contradice la evidencia médica: se marcan con † y se explican debajo del gráfico */
+  const NO_CAUSAL={fuma:1,alcohol:1,glucosa_3:1};
+  const etq=k=>NOMBRE_VAR[k]+(NO_CAUSAL[k]?" †":"");
+  const maxAbs=Math.max(...s.map(a=>Math.abs(a[1])),1e-9);
+  const habitos=x.fuma||x.alcohol;
+  $("sNota").innerHTML=(habitos?`<b>¿Por qué fumar o beber alcohol baja el riesgo aquí?</b> No es un efecto real: la evidencia médica muestra que ambos <b>aumentan</b> el riesgo cardiovascular. `:`<b>† Asociación no causal.</b> `)+
+    `En estos datos el tabaco y el alcohol son autorreportados (probablemente subreportados) y fumar se asocia con ser hombre (0,34), así que el modelo les asignó un peso levemente negativo. La glucosa muy alta pierde su efecto porque lo absorbe el colesterol muy alto (0,48). El simulador muestra lo que aprendió el modelo, no lo que causa la enfermedad.`;
+  if(!$("p-simulador").hidden) plot("chSim",[{type:"bar",orientation:"h",y:s.map(a=>etq(a[0])),x:s.map(a=>a[1]),marker:{color:s.map(a=>a[1]>0?T.c1:T.c0)},
+     text:s.map(a=>(a[1]>0?"+":"")+fmt(a[1],2)),textposition:s.map(a=>(a[1]<0&&Math.abs(a[1])>0.45*maxAbs)?"inside":"outside"),textangle:0,constraintext:"none",
+     insidetextfont:{color:"#ffffff",family:"JetBrains Mono, ui-monospace, monospace"},cliponaxis:false,textfont:{color:T["ink-2"],family:"JetBrains Mono, ui-monospace, monospace"},hovertemplate:"%{y}: %{x:.3f} log-odds<extra></extra>"}],
+     lay({margin:{l:150,r:52,t:4,b:36},xaxis:{title:{text:"Aporte en log-odds"},zeroline:true,zerolinecolor:T.muted,range:(()=>{const r=rango(s.map(a=>a[1])),w=r[1]-r[0];return [r[0]-(r[0]<0?w*0.12:0),r[1]+w*0.05];})()},yaxis:{gridcolor:"rgba(0,0,0,0)",automargin:true,ticksuffix:"  "}}));
 }
 
 /* ================= Pestañas y tema ================= */
